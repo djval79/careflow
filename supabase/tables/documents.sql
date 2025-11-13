@@ -1,0 +1,20 @@
+CREATE TABLE documents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    employee_id UUID NOT NULL,
+    document_type VARCHAR(100) NOT NULL,
+    document_name VARCHAR(255) NOT NULL,
+    file_url TEXT NOT NULL,
+    file_size INTEGER,
+    mime_type VARCHAR(100),
+    expiry_date DATE,
+    is_verified BOOLEAN DEFAULT false,
+    verified_by UUID,
+    verified_at TIMESTAMP,
+    notes TEXT,
+    uploaded_by UUID NOT NULL,
+    uploaded_at TIMESTAMP DEFAULT NOW(),
+    version INTEGER DEFAULT 1,
+    is_current_version BOOLEAN DEFAULT true,
+    replaced_by UUID,
+    created_at TIMESTAMP DEFAULT NOW()
+);

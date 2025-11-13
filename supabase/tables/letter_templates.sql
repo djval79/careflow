@@ -1,0 +1,20 @@
+CREATE TABLE letter_templates (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    template_name VARCHAR(255) NOT NULL,
+    template_type VARCHAR(100) NOT NULL CHECK (template_type IN ('offer_letter',
+    'employment_contract',
+    'reference_letter',
+    'warning_letter',
+    'termination_letter',
+    'compliance_letter',
+    'other')),
+    subject VARCHAR(500),
+    content TEXT NOT NULL,
+    merge_fields TEXT,
+    category VARCHAR(100),
+    is_active BOOLEAN DEFAULT true,
+    version INTEGER DEFAULT 1,
+    created_by UUID NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);

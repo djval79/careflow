@@ -1,0 +1,153 @@
+import React from 'react';
+import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { 
+  LayoutDashboard, 
+  Users, 
+  Briefcase, 
+  FileText, 
+  Settings, 
+  Sliders,
+  LogOut,
+  Menu,
+  X,
+  Shield,
+  Fingerprint,
+  Zap,
+  FolderOpen,
+  MessageSquare,
+  Bell
+} from 'lucide-react';
+
+export default function AppLayout() {
+  const { user, profile, signOut } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+
+  async function handleSignOut() {
+    await signOut();
+    navigate('/login');
+  }
+
+  const navigation = [
+    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'HR Module', href: '/hr', icon: Users },
+    { name: 'Recruitment', href: '/recruitment', icon: Briefcase },
+    { name: 'Documents', href: '/documents', icon: FolderOpen },
+    { name: 'Messaging', href: '/messaging', icon: MessageSquare },
+    { name: 'Notice Board', href: '/noticeboard', icon: Bell },
+    { name: 'Home Office Compliance', href: '/compliance', icon: Shield },
+    { name: 'Biometric System', href: '/biometric', icon: Fingerprint },
+    { name: 'Automation', href: '/automation', icon: Zap },
+    { name: 'Letters', href: '/letters', icon: FileText },
+    { name: 'Settings', href: '/settings', icon: Settings },
+    { name: 'Recruit Settings', href: '/recruit-settings', icon: Sliders },
+  ];
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Top Navigation Bar */}
+      <nav className="bg-white border-b border-gray-200 fixed w-full z-30">
+        <div className="px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="lg:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              >
+                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
+              
+              <div className="flex items-center ml-2 lg:ml-0">
+                <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-xl">HR</span>
+                </div>
+                <span className="ml-3 text-xl font-bold text-gray-900">HRSuite</span>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-4">
+              <div className="hidden sm:block text-right">
+                <p className="text-sm font-medium text-gray-900">{profile?.full_name || user?.email}</p>
+                <p className="text-xs text-gray-500 capitalize">{profile?.role?.replace('_', ' ')}</p>
+              </div>
+              
+              <button
+                onClick={handleSignOut}
+                className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Navigation */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden border-t border-gray-200 bg-white">
+            <div className="px-2 pt-2 pb-3 space-y-1">
+              {navigation.map((item) => {
+                const isActive = location.pathname === item.href;
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition ${
+                      isActive
+                        ? 'bg-indigo-50 text-indigo-600'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    <item.icon className="w-5 h-5 mr-3" />
+                    {item.name}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </nav>
+
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col lg:pt-16">
+        <div className="flex flex-col flex-grow bg-white border-r border-gray-200 pt-5 pb-4 overflow-y-auto">
+          <nav className="mt-5 flex-1 px-2 space-y-1">
+            {navigation.map((item) => {
+              const isActive = location.pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={`group flex items-center px-3 py-3 text-sm font-medium rounded-lg transition ${
+                    isActive
+                      ? 'bg-indigo-50 text-indigo-600'
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                >
+                  <item.icon className={`mr-3 flex-shrink-0 h-5 w-5 ${
+                    isActive ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-500'
+                  }`} />
+                  {item.name}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="lg:pl-64 flex flex-col flex-1 pt-16">
+        <main className="flex-1">
+          <div className="py-6">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <Outlet />
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,20 @@
+CREATE TABLE application_form_fields (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    field_name VARCHAR(255) NOT NULL,
+    field_type VARCHAR(50) NOT NULL CHECK (field_type IN ('text',
+    'textarea',
+    'email',
+    'phone',
+    'date',
+    'select',
+    'multiselect',
+    'checkbox',
+    'file')),
+    field_label VARCHAR(255) NOT NULL,
+    field_options TEXT,
+    is_required BOOLEAN DEFAULT false,
+    display_order INTEGER DEFAULT 0,
+    is_active BOOLEAN DEFAULT true,
+    job_posting_id UUID,
+    created_at TIMESTAMP DEFAULT NOW()
+);
