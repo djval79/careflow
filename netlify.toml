@@ -2,14 +2,17 @@
 # Optimized for React + TypeScript + Vite deployment
 
 [build]
+  # Base directory for the build
+  base = "hr-recruitment-platform"
+  
   # Build command for production
   command = "npm run build"
   
   # Directory containing the built static files
   publish = "dist"
   
-  # Base directory for the build
-  base = "."
+  # Directory containing Netlify functions
+  functions = "netlify/functions"
 
 [build.environment]
   # Node.js version for build
@@ -109,7 +112,7 @@
 
 # Functions configuration (if using Netlify Functions)
 [functions]
-  directory = "netlify/functions"
+  directory = "hr-recruitment-platform/netlify/functions"
   
 # Forms configuration (for contact/feedback forms)
 [forms]
