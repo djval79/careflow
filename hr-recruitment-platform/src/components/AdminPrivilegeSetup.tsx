@@ -1,0 +1,187 @@
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
+import { Shield, User, Settings } from 'lucide-react';
+
+export default function AdminPrivilegeSetup() {
+  const { user } = useAuth();
+  const [userRole, setUserRole] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    checkCurrentRole();
+  }, [user]);
+
+  async function checkCurrentRole() {
+    if (!user) return;
+    
+    setChecking(true);
+    try {
+      const { data, error } = await supabase
+        .from('users_profiles')
+        .select('role, full_name')
+        .eq('user_id', user.id)
+        .single();
+
+      if (data) {
+        setUserRole(data.role || 'No role assigned');
+      } else {
+        setUserRole('No profile found');
+      }
+    } catch (error) {
+      console.error('Error checking role:', error);
+      setUserRole('Error checking role');
+    } finally {
+      setChecking(false);
+    }
+  }
+
+  async function setupFullAdminAccess() {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      // First, upsert the user profile with Admin role
+      const { error: profileError } = await supabase
+        .from('users_profiles')
+        .upsert({
+          user_id: user.id,
+          full_name: 'System Administrator',
+          role: 'Admin',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          permissions: JSON.stringify([
+            'create_jobs',
+            'manage_applications', 
+            'schedule_interviews',
+            'manage_employees',
+            'create_announcements',
+            'manage_documents',
+            'generate_letters',
+            'access_reports',
+            'manage_settings',
+            'admin_access'
+          ])
+        });
+
+      if (profileError) throw profileError;
+
+      // Check if the update was successful
+      const { data: updatedProfile } = await supabase
+        .from('users_profiles')
+        .select('role, full_name, permissions')
+        .eq('user_id', user.id)
+        .single();
+
+      if (updatedProfile && updatedProfile.role === 'Admin') {
+        setUserRole('Admin');
+        setSuccess(true);
+        
+        // Add audit log
+        await supabase.from('audit_logs').insert({
+          user_id: user.id,
+          action: 'SET_ADMIN_PRIVILEGES',
+          entity_type: 'users_profiles',
+          entity_id: user.id,
+          details: 'Full admin access granted',
+          timestamp: new Date().toISOString()
+        });
+
+        // Refresh the page after 2 seconds to apply changes
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        throw new Error('Failed to update role');
+      }
+    } catch (error) {
+      console.error('Error setting admin privileges:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (!user) return null;
+
+  const isAdmin = userRole === 'Admin';
+  const needsSetup = !isAdmin && userRole !== 'checking';
+
+  if (success) {
+    return (
+      <div className="fixed top-4 right-4 bg-green-50 border border-green-200 rounded-lg p-4 shadow-lg z-50 max-w-md">
+        <div className="flex items-center gap-3">
+          <Shield className="w-6 h-6 text-green-600" />
+          <div>
+            <h3 className="font-medium text-green-800">Admin Access Granted!</h3>
+            <p className="text-sm text-green-600">Full privileges activated. Refreshing page...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed top-4 right-4 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-w-md">
+      <div className="p-4">
+        <div className="flex items-center gap-3 mb-3">
+          <User className="w-5 h-5 text-gray-600" />
+          <div>
+            <h3 className="font-medium text-gray-900">Account Privileges</h3>
+            <p className="text-sm text-gray-600">Email: {user.email}</p>
+          </div>
+        </div>
+
+        <div className="mb-3 p-3 bg-gray-50 rounded">
+          <p className="text-sm">
+            <strong>Current Role:</strong> {checking ? 'Checking...' : userRole}
+          </p>
+          {isAdmin && (
+            <div className="flex items-center gap-2 mt-2">
+              <Shield className="w-4 h-4 text-green-600" />
+              <span className="text-sm text-green-600 font-medium">Full Admin Access</span>
+            </div>
+          )}
+        </div>
+
+        {needsSetup && (
+          <div>
+            <p className="text-sm text-orange-600 mb-3">
+              You need admin privileges to access all features including the Notice Board.
+            </p>
+            <button
+              onClick={setupFullAdminAccess}
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Setting up...
+                </>
+              ) : (
+                <>
+                  <Settings className="w-4 h-4" />
+                  Grant Full Admin Access
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
+        {isAdmin && (
+          <div className="text-center">
+            <p className="text-sm text-green-600">✅ You have full admin privileges!</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-2 text-sm text-indigo-600 hover:text-indigo-800"
+            >
+              Refresh page
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

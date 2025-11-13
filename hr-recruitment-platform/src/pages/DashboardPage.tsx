@@ -11,6 +11,7 @@ import {
   FileText
 } from 'lucide-react';
 import { format } from 'date-fns';
+import AdminPrivilegeSetup from '../components/AdminPrivilegeSetup';
 
 interface DashboardStats {
   totalEmployees: number;
@@ -217,6 +218,9 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+      
+      {/* Admin Privilege Setup */}
+      <AdminPrivilegeSetup />
     </div>
   );
 }
