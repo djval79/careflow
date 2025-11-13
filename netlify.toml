@@ -9,7 +9,7 @@
   command = "corepack enable && corepack prepare pnpm@10.21.0 --activate && pnpm install && pnpm run build"
   
   # Directory containing the built static files
-  publish = "dist"
+  publish = "hr-recruitment-platform/dist"
   
   # Directory containing Netlify functions
   functions = "netlify/functions"
