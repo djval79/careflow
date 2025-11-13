@@ -100,7 +100,6 @@ export default function DocumentGenerationModal({
       isOpen={isOpen}
       onClose={onClose}
       title="🤖 Smart Document Generation"
-      size="large"
     >
       <div className="space-y-6">
         {type === 'custom' && (

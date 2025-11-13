@@ -172,8 +172,14 @@ export default function AutomationDashboard() {
           entity: formData.trigger_entity as any,
           value: formData.trigger_value
         },
-        conditions: formData.conditions.filter(c => c.field && c.value),
-        actions: formData.actions,
+        conditions: formData.conditions.filter(c => c.field && c.value).map(c => ({
+          ...c,
+          operator: c.operator as "equals" | "greater_than" | "less_than" | "contains" | "not_null"
+        })),
+        actions: formData.actions.map(a => ({
+          ...a,
+          type: a.type as "send_notification" | "update_status" | "schedule_interview" | "generate_document" | "assign_task" | "escalate"
+        })),
         isActive: true
       };
 
@@ -187,7 +193,6 @@ export default function AutomationDashboard() {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         title="🤖 Create New Automation"
-        size="large"
       >
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>

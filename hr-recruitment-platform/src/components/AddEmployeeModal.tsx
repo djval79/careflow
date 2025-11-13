@@ -24,6 +24,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onSuccess, onError }
     employment_type: 'full_time',
     date_of_birth: '',
     date_hired: '',
+    salary: '',
     salary_grade: '',
     status: 'active'
   });
