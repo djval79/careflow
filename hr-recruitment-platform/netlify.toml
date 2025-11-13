@@ -12,3 +12,15 @@
   framework = "vite"
   targetPort = 5173
   command = "npm run dev"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[dev]
+  framework = "vite"
+  targetPort = 5173
+  command = "npm run dev"
