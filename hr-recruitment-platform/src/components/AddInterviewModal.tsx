@@ -92,9 +92,10 @@ export default function AddInterviewModal({ isOpen, onClose, onSuccess, onError 
         onClose();
         setFormData({
           application_id: '',
-          interview_type: 'technical',
+          interview_type: 'phone_screening',
           scheduled_date: '',
           scheduled_time: '',
+          duration: 60,
           location: '',
           interviewer_notes: '',
           status: 'scheduled'
