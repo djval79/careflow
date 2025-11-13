@@ -5,8 +5,8 @@
   # Base directory for the build
   base = "hr-recruitment-platform"
   
-  # Build command for production
-  command = "npm install -g typescript && npm install && npm run build"
+  # Build command for production - using pnpm
+  command = "corepack enable && corepack prepare pnpm@10.21.0 --activate && pnpm install && pnpm run build"
   
   # Directory containing the built static files
   publish = "dist"
@@ -18,8 +18,8 @@
   # Node.js version for build
   NODE_VERSION = "18"
   
-  # Use npm instead of pnpm for Netlify
-  NPM_FLAGS = "--legacy-peer-deps"
+  # Force pnpm to install devDependencies and handle lockfile
+  PNPM_FLAGS = "--include=dev --no-frozen-lockfile"
   
   # Enable public folder processing
   NODE_ENV = "production"
@@ -96,19 +96,19 @@
 
 # Environment-specific deployments
 [context.production]
-  command = "npm run build"
+  command = "corepack enable && corepack prepare pnpm@10.21.0 --activate && pnpm install && pnpm run build"
   [context.production.environment]
     NODE_ENV = "production"
     VITE_ENVIRONMENT = "production"
 
 [context.deploy-preview]
-  command = "npm run build"
+  command = "corepack enable && corepack prepare pnpm@10.21.0 --activate && pnpm install && pnpm run build"
   [context.deploy-preview.environment]
     NODE_ENV = "production"
     VITE_ENVIRONMENT = "preview"
 
 [context.branch-deploy]
-  command = "npm run build"
+  command = "corepack enable && corepack prepare pnpm@10.21.0 --activate && pnpm install && pnpm run build"
   [context.branch-deploy.environment]
     NODE_ENV = "production"
     VITE_ENVIRONMENT = "development"
@@ -132,7 +132,7 @@
 
 # Dev configuration for local development
 [dev]
-  command = "npm run dev"
+  command = "pnpm run dev"
   port = 3000
   publish = "dist"
   autoLaunch = false
