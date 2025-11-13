@@ -164,6 +164,9 @@ export default function LoginPage() {
           HR & Recruitment Management Platform
         </p>
       </div>
+      
+      {/* Quick Admin Setup */}
+      <QuickAdminSetup />
     </div>
   );
 }
