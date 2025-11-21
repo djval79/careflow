@@ -81,7 +81,7 @@ interface KPIValue {
 }
 
 export default function PerformancePage() {
-  const [activeTab, setActiveTab] = useState<TabType>('reviews');
+  const [activeTab, setActiveTab] = useState<'reviews' | 'goals' | 'kpis' | 'settings' | 'reports'>('reviews');
   const [reviews, setReviews] = useState<Review[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [kpiValues, setKpiValues] = useState<KPIValue[]>([]);

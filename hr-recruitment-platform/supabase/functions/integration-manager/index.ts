@@ -214,7 +214,7 @@ function replaceTemplateVariables(template: string, variables: Record<string, an
     return result;
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
     const logger = createLogger(req);
 
     if (req.method === 'OPTIONS') {

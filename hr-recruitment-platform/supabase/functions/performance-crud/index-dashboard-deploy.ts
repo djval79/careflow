@@ -73,7 +73,7 @@ const corsHeaders = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
     const logger = createLogger(req);
 
     if (req.method === 'OPTIONS') {
