@@ -440,7 +440,6 @@ export default function PerformancePage() {
                       if (activeTab === 'reviews') setShowCreateReviewModal(true);
                       if (activeTab === 'goals') setShowAddGoalModal(true);
                       if (activeTab === 'kpis') setShowAddKPIModal(true);
-                      if (activeTab === 'settings') setShowAddReviewTypeModal(true);
                     }}
                     className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
                   >
@@ -811,96 +810,9 @@ export default function PerformancePage() {
           </div>
         )}
 
-        import PerformanceReports from '@/components/PerformanceReports';
-
-        // ... existing imports ...
-
-        // ... inside render ...
         {/* Reports Tab */}
         {activeTab === 'reports' && (
           <PerformanceReports />
-        )}
-
-        {/* Reports Tab */}
-        {activeTab === 'reports' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="bg-white shadow rounded-lg p-6">
-              <div className="flex items-center">
-                <Award className="h-12 w-12 text-indigo-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Reviews</p>
-                  <p className="text-2xl font-bold text-gray-900">{reviews.length}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white shadow rounded-lg p-6">
-              <div className="flex items-center">
-                <Target className="h-12 w-12 text-green-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Active Goals</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {goals.filter(g => g.status === 'active' || g.status === 'on_track').length}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white shadow rounded-lg p-6">
-              <div className="flex items-center">
-                <CheckCircle className="h-12 w-12 text-purple-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Completed Reviews</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {reviews.filter(r => r.status === 'completed').length}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white shadow rounded-lg p-6">
-              <div className="flex items-center">
-                <AlertCircle className="h-12 w-12 text-red-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Overdue Reviews</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {reviews.filter(r => r.status === 'overdue').length}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white shadow rounded-lg p-6">
-              <div className="flex items-center">
-                <Target className="h-12 w-12 text-yellow-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Goals at Risk</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {goals.filter(g => g.status === 'at_risk').length}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white shadow rounded-lg p-6">
-              <div className="flex items-center">
-                <Star className="h-12 w-12 text-yellow-400" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Avg Rating</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {reviews.filter(r => r.overall_rating).length > 0
-                      ? (
-                        reviews
-                          .filter(r => r.overall_rating)
-                          .reduce((sum, r) => sum + r.overall_rating, 0) /
-                        reviews.filter(r => r.overall_rating).length
-                      ).toFixed(1)
-                      : 'N/A'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
         )}
       </div>
 
