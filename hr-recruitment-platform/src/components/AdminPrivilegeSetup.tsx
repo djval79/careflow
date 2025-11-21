@@ -16,7 +16,7 @@ export default function AdminPrivilegeSetup() {
 
   async function checkCurrentRole() {
     if (!user) return;
-    
+
     setChecking(true);
     try {
       const { data, error } = await supabase
@@ -40,64 +40,41 @@ export default function AdminPrivilegeSetup() {
 
   async function setupFullAdminAccess() {
     if (!user) return;
-    
+
     setLoading(true);
     try {
-      // First, upsert the user profile with Admin role
-      const { error: profileError } = await supabase
-        .from('users_profiles')
-        .upsert({
+      // Call the admin-setup Edge Function
+      const { data, error } = await supabase.functions.invoke('admin-setup', {
+        body: {
           user_id: user.id,
-          full_name: 'System Administrator',
-          role: 'Admin',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          permissions: JSON.stringify([
-            'create_jobs',
-            'manage_applications', 
-            'schedule_interviews',
-            'manage_employees',
-            'create_announcements',
-            'manage_documents',
-            'generate_letters',
-            'access_reports',
-            'manage_settings',
-            'admin_access'
-          ])
-        });
+          email: user.email
+        }
+      });
 
-      if (profileError) throw profileError;
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
-      // Check if the update was successful
-      const { data: updatedProfile } = await supabase
-        .from('users_profiles')
-        .select('role, full_name, permissions')
-        .eq('user_id', user.id)
-        .single();
+      setUserRole('Admin');
+      setSuccess(true);
 
-      if (updatedProfile && updatedProfile.role === 'Admin') {
-        setUserRole('Admin');
-        setSuccess(true);
-        
-        // Add audit log
-        await supabase.from('audit_logs').insert({
-          user_id: user.id,
-          action: 'SET_ADMIN_PRIVILEGES',
-          entity_type: 'users_profiles',
-          entity_id: user.id,
-          details: 'Full admin access granted',
-          timestamp: new Date().toISOString()
-        });
+      // Add audit log (best effort)
+      await supabase.from('audit_logs').insert({
+        user_id: user.id,
+        action: 'SET_ADMIN_PRIVILEGES',
+        entity_type: 'users_profiles',
+        entity_id: user.id,
+        details: 'Full admin access granted via Edge Function',
+        timestamp: new Date().toISOString()
+      });
 
-        // Refresh the page after 2 seconds to apply changes
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
-      } else {
-        throw new Error('Failed to update role');
-      }
+      // Refresh the page after 2 seconds to apply changes
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+
     } catch (error) {
       console.error('Error setting admin privileges:', error);
+      alert('Failed to grant admin access: ' + (error.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }

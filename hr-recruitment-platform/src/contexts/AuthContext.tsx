@@ -24,27 +24,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         setUser(user);
-        
+
         if (user) {
           const { data: profileData } = await supabase
             .from('users_profiles')
             .select('*')
             .eq('user_id', user.id)
             .maybeSingle();
-          
+
           setProfile(profileData);
         }
       } finally {
         setLoading(false);
       }
     }
-    
+
     loadUser();
 
     // Set up auth listener - KEEP SIMPLE, avoid async operations
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
-      
+
       // Load profile synchronously after state change
       if (session?.user) {
         const userId = session.user.id;

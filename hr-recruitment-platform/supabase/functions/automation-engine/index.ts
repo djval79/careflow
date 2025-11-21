@@ -44,6 +44,11 @@ Deno.serve(async (req) => {
 
         switch (action) {
             case 'CREATE_RULE':
+                // Ensure JSON fields are properly stringified if they aren't already
+                const triggerData = typeof data.trigger_data === 'object' ? JSON.stringify(data.trigger_data) : data.trigger_data;
+                const conditions = typeof data.conditions === 'object' ? JSON.stringify(data.conditions) : data.conditions;
+                const actions = typeof data.actions === 'object' ? JSON.stringify(data.actions) : data.actions;
+
                 const createResponse = await fetch(`${supabaseUrl}/rest/v1/automation_rules`, {
                     method: 'POST',
                     headers: {
@@ -53,7 +58,13 @@ Deno.serve(async (req) => {
                         'Prefer': 'return=representation'
                     },
                     body: JSON.stringify({
-                        ...data,
+                        rule_name: data.rule_name,
+                        rule_type: data.rule_type || 'workflow',
+                        trigger_event: data.trigger_event || 'manual',
+                        trigger_data: triggerData,
+                        conditions: conditions,
+                        actions: actions,
+                        priority: data.priority || 1,
                         created_by: userId,
                         is_active: true,
                         execution_count: 0,
@@ -93,6 +104,8 @@ Deno.serve(async (req) => {
 
                 try {
                     console.log(`Executing rule: ${rule.rule_name}`);
+                    // Here we would parse the actions JSON and execute them
+                    // For now, we just log it
                 } catch (error) {
                     executionStatus = 'failed';
                     executionError = error.message;

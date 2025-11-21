@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseUrl } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  Plus, 
-  Search, 
+import {
+  Plus,
+  Search,
   Filter,
   TrendingUp,
   Target,
@@ -25,6 +25,7 @@ import {
 import { format } from 'date-fns';
 import Modal from '@/components/Modal';
 import Toast from '@/components/Toast';
+import PerformanceReports from '@/components/PerformanceReports';
 
 type TabType = 'reviews' | 'goals' | 'kpis' | 'settings' | 'reports';
 
@@ -92,7 +93,7 @@ export default function PerformancePage() {
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
   const { user, profile } = useAuth();
-  
+
   // Modal states
   const [showAddReviewTypeModal, setShowAddReviewTypeModal] = useState(false);
   const [showCreateReviewModal, setShowCreateReviewModal] = useState(false);
@@ -145,7 +146,6 @@ export default function PerformancePage() {
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
       switch (activeTab) {
         case 'reviews':
@@ -165,7 +165,7 @@ export default function PerformancePage() {
             }
           );
           const reviewData = await reviewResponse.json();
-          setReviews(reviewData || []);
+          setReviews(Array.isArray(reviewData) ? reviewData : []);
           break;
 
         case 'goals':
@@ -185,11 +185,11 @@ export default function PerformancePage() {
             }
           );
           const goalData = await goalResponse.json();
-          setGoals(goalData || []);
+          setGoals(Array.isArray(goalData) ? goalData : []);
           break;
 
         case 'kpis':
-          const kpiResponse = await fetch(
+          const kpiDefResponse = await fetch(
             `${supabaseUrl}/functions/v1/performance-crud`,
             {
               method: 'POST',
@@ -199,14 +199,14 @@ export default function PerformancePage() {
               },
               body: JSON.stringify({
                 action: 'list',
-                entity: 'kpi_values',
-                filters: {}
+                entity: 'kpi_definitions',
               }),
             }
           );
-          const kpiData = await kpiResponse.json();
-          setKpiValues(kpiData || []);
+          const kpiDefData = await kpiDefResponse.json();
+          setKpiDefinitions(Array.isArray(kpiDefData) ? kpiDefData : []);
           break;
+
 
         case 'settings':
           const typeResponse = await fetch(
@@ -219,12 +219,12 @@ export default function PerformancePage() {
               },
               body: JSON.stringify({
                 action: 'list',
-                entity: 'review_types',
+                entity: 'performance_review_types',
               }),
             }
           );
           const typeData = await typeResponse.json();
-          setReviewTypes(typeData || []);
+          setReviewTypes(Array.isArray(typeData) ? typeData : []);
           break;
       }
     } catch (error) {
@@ -239,7 +239,6 @@ export default function PerformancePage() {
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
       const response = await fetch(
         `${supabaseUrl}/functions/v1/performance-crud`,
@@ -257,14 +256,14 @@ export default function PerformancePage() {
       );
 
       const result = await response.json();
-      
+
       if (result.error) {
         throw new Error(result.error);
       }
 
-      setToast({ 
-        message: `Successfully scheduled ${result.count} review(s)`, 
-        type: 'success' 
+      setToast({
+        message: `Successfully scheduled ${result.count} review(s)`,
+        type: 'success'
       });
       loadData();
     } catch (error: any) {
@@ -375,11 +374,10 @@ export default function PerformancePage() {
                     setSearchTerm('');
                     setStatusFilter('all');
                   }}
-                  className={`${
-                    activeTab === tab.id
-                      ? 'border-indigo-500 text-indigo-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm inline-flex items-center`}
+                  className={`${activeTab === tab.id
+                    ? 'border-indigo-500 text-indigo-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm inline-flex items-center`}
                 >
                   <tab.icon className="h-5 w-5 mr-2" />
                   {tab.label}
@@ -556,7 +554,7 @@ export default function PerformancePage() {
                         )}
                         {isAdmin && (
                           <button
-                            onClick={() => {/* handle delete */}}
+                            onClick={() => {/* handle delete */ }}
                             className="text-red-600 hover:text-red-900"
                           >
                             <Trash2 className="h-5 w-5" />
@@ -611,20 +609,20 @@ export default function PerformancePage() {
                       </div>
                       <div className="ml-4 flex items-center space-x-2">
                         <button
-                          onClick={() => {/* handle edit */}}
+                          onClick={() => {/* handle edit */ }}
                           className="text-indigo-600 hover:text-indigo-900"
                         >
                           <Edit className="h-5 w-5" />
                         </button>
                         <button
-                          onClick={() => {/* handle delete */}}
+                          onClick={() => {/* handle delete */ }}
                           className="text-red-600 hover:text-red-900"
                         >
                           <Trash2 className="h-5 w-5" />
                         </button>
                       </div>
                     </div>
-                    
+
                     {/* Progress Bar */}
                     <div className="mt-4">
                       <div className="flex items-center justify-between mb-2">
@@ -633,13 +631,12 @@ export default function PerformancePage() {
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
-                          className={`h-2 rounded-full ${
-                            goal.progress_percentage >= 75
-                              ? 'bg-green-600'
-                              : goal.progress_percentage >= 50
+                          className={`h-2 rounded-full ${goal.progress_percentage >= 75
+                            ? 'bg-green-600'
+                            : goal.progress_percentage >= 50
                               ? 'bg-yellow-500'
                               : 'bg-red-500'
-                          }`}
+                            }`}
                           style={{ width: `${goal.progress_percentage}%` }}
                         ></div>
                       </div>
@@ -728,14 +725,14 @@ export default function PerformancePage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
-                          onClick={() => {/* handle edit */}}
+                          onClick={() => {/* handle edit */ }}
                           className="text-indigo-600 hover:text-indigo-900 mr-3"
                         >
                           <Edit className="h-5 w-5" />
                         </button>
                         {isAdmin && (
                           <button
-                            onClick={() => {/* handle delete */}}
+                            onClick={() => {/* handle delete */ }}
                             className="text-red-600 hover:text-red-900"
                           >
                             <Trash2 className="h-5 w-5" />
@@ -794,13 +791,13 @@ export default function PerformancePage() {
                           <Plus className="h-5 w-5" />
                         </button>
                         <button
-                          onClick={() => {/* handle edit */}}
+                          onClick={() => {/* handle edit */ }}
                           className="text-indigo-600 hover:text-indigo-900"
                         >
                           <Edit className="h-5 w-5" />
                         </button>
                         <button
-                          onClick={() => {/* handle delete */}}
+                          onClick={() => {/* handle delete */ }}
                           className="text-red-600 hover:text-red-900"
                         >
                           <Trash2 className="h-5 w-5" />
@@ -812,6 +809,16 @@ export default function PerformancePage() {
               </div>
             ))}
           </div>
+        )}
+
+        import PerformanceReports from '@/components/PerformanceReports';
+
+        // ... existing imports ...
+
+        // ... inside render ...
+        {/* Reports Tab */}
+        {activeTab === 'reports' && (
+          <PerformanceReports />
         )}
 
         {/* Reports Tab */}
@@ -883,11 +890,11 @@ export default function PerformancePage() {
                   <p className="text-2xl font-bold text-gray-900">
                     {reviews.filter(r => r.overall_rating).length > 0
                       ? (
-                          reviews
-                            .filter(r => r.overall_rating)
-                            .reduce((sum, r) => sum + r.overall_rating, 0) /
-                          reviews.filter(r => r.overall_rating).length
-                        ).toFixed(1)
+                        reviews
+                          .filter(r => r.overall_rating)
+                          .reduce((sum, r) => sum + r.overall_rating, 0) /
+                        reviews.filter(r => r.overall_rating).length
+                      ).toFixed(1)
                       : 'N/A'}
                   </p>
                 </div>

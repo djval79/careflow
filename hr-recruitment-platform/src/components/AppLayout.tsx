@@ -1,12 +1,12 @@
 import React from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  LayoutDashboard, 
-  Users, 
-  Briefcase, 
-  FileText, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Users,
+  Briefcase,
+  FileText,
+  Settings,
   Sliders,
   LogOut,
   Menu,
@@ -36,6 +36,7 @@ export default function AppLayout() {
     { name: 'HR Module', href: '/hr', icon: Users },
     { name: 'Recruitment', href: '/recruitment', icon: Briefcase },
     { name: 'Performance', href: '/performance', icon: TrendingUp },
+    { name: 'Integrations', href: '/integrations', icon: Zap },
     { name: 'Documents', href: '/documents', icon: FolderOpen },
     { name: 'Messaging', href: '/messaging', icon: MessageSquare },
     { name: 'Notice Board', href: '/noticeboard', icon: Bell },
@@ -60,7 +61,7 @@ export default function AppLayout() {
               >
                 {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
-              
+
               <div className="flex items-center ml-2 lg:ml-0">
                 <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold text-xl">HR</span>
@@ -74,7 +75,7 @@ export default function AppLayout() {
                 <p className="text-sm font-medium text-gray-900">{profile?.full_name || user?.email}</p>
                 <p className="text-xs text-gray-500 capitalize">{profile?.role?.replace('_', ' ')}</p>
               </div>
-              
+
               <button
                 onClick={handleSignOut}
                 className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
@@ -97,11 +98,10 @@ export default function AppLayout() {
                     key={item.name}
                     to={item.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition ${
-                      isActive
+                    className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition ${isActive
                         ? 'bg-indigo-50 text-indigo-600'
                         : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
+                      }`}
                   >
                     <item.icon className="w-5 h-5 mr-3" />
                     {item.name}
@@ -123,15 +123,13 @@ export default function AppLayout() {
                 <Link
                   key={item.name}
                   to={item.href}
-                  className={`group flex items-center px-3 py-3 text-sm font-medium rounded-lg transition ${
-                    isActive
+                  className={`group flex items-center px-3 py-3 text-sm font-medium rounded-lg transition ${isActive
                       ? 'bg-indigo-50 text-indigo-600'
                       : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
+                    }`}
                 >
-                  <item.icon className={`mr-3 flex-shrink-0 h-5 w-5 ${
-                    isActive ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-500'
-                  }`} />
+                  <item.icon className={`mr-3 flex-shrink-0 h-5 w-5 ${isActive ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-500'
+                    }`} />
                   {item.name}
                 </Link>
               );
