@@ -43,16 +43,32 @@ export default function AdminPrivilegeSetup() {
 
     setLoading(true);
     try {
-      // Call the admin-setup Edge Function
-      const { data, error } = await supabase.functions.invoke('admin-setup', {
-        body: {
+      // Use direct DB call instead of Edge Function for reliability
+      const { error } = await supabase
+        .from('users_profiles')
+        .upsert({
           user_id: user.id,
-          email: user.email
-        }
-      });
+          email: user.email,
+          full_name: 'System Administrator',
+          role: 'Admin',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          permissions: JSON.stringify([
+            'create_jobs',
+            'manage_applications',
+            'schedule_interviews',
+            'manage_employees',
+            'create_announcements',
+            'manage_documents',
+            'generate_letters',
+            'access_reports',
+            'manage_settings',
+            'admin_access'
+          ])
+        });
 
       if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      if (error) throw error;
 
       setUserRole('Admin');
       setSuccess(true);
