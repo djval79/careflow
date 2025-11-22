@@ -15,29 +15,23 @@ interface AddApplicationModalProps {
 export default function AddApplicationModal({ isOpen, onClose, onSuccess, onError }: AddApplicationModalProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [jobs, setJobs] = useState<any[]>([]);
+  const [selectedPosition, setSelectedPosition] = useState('');
   const [formSchema, setFormSchema] = useState<FormField[]>([]);
-  const [selectedJobId, setSelectedJobId] = useState('');
+  const [basicInfo, setBasicInfo] = useState({
+    applicant_first_name: '',
+    applicant_last_name: '',
+    applicant_email: '',
+    applicant_phone: ''
+  });
 
   useEffect(() => {
     if (isOpen) {
-      loadJobs();
       loadFormSchema();
     }
   }, [isOpen]);
 
-  async function loadJobs() {
-    const { data } = await supabase
-      .from('job_postings')
-      .select('id, job_title, department, status')
-      .eq('status', 'published')
-      .order('created_at', { ascending: false });
-    setJobs(data || []);
-  }
-
   async function loadFormSchema() {
-    // Load the active form template. For now, just take the first active one.
-    // In a real app, you might link forms to specific jobs.
+    // Load the active form template.
     const { data } = await supabase
       .from('form_templates')
       .select('schema')
@@ -47,20 +41,6 @@ export default function AddApplicationModal({ isOpen, onClose, onSuccess, onErro
       .single();
 
     if (data && data.schema) {
-      // Prepend standard required fields if they are not in the schema?
-      // Or assume the admin configures them.
-      // For safety, let's ensure the schema has the basics if it's empty, 
-      // but ideally we trust the admin's schema.
-      // We will prepend the Job Selection field manually in the UI as it's special.
-
-      // We also need to ensure we have the basic applicant info fields if the schema doesn't have them.
-      // But let's assume the "Standard Job Application" template we seeded covers this.
-      // However, the seeded template didn't have Name/Email/Phone! 
-      // I should probably add them to the form schema state if they are missing, 
-      // or render them separately as "hardcoded" basics.
-
-      // Let's render Name, Email, Phone hardcoded at the top, and then the dynamic form.
-      // This ensures we always get the critical data.
       setFormSchema(data.schema);
     }
   }
@@ -84,68 +64,9 @@ export default function AddApplicationModal({ isOpen, onClose, onSuccess, onErro
     }
   }
 
-  const handleSubmit = async (formData: Record<string, any>) => {
-    if (!selectedJobId) {
-      onError('Please select a job position');
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      // 1. Handle File Uploads
-      const processedData: Record<string, any> = { ...formData };
-
-      for (const [key, value] of Object.entries(formData)) {
-        if (value instanceof File) {
-          const url = await uploadFile(value, 'applicant-cvs', 'uploads');
-          if (url) {
-            processedData[key] = url;
-          } else {
-            throw new Error(`Failed to upload file for ${key}`);
-          }
-        }
-      }
-
-      // 2. Map to Database Columns
-      const standardColumns = [
-        'applicant_first_name', 'applicant_last_name', 'applicant_email', 'applicant_phone',
-        'cv_url', 'cover_letter', 'portfolio_url', 'linkedin_url'
-      ];
-
-      const dbPayload: any = {
-        job_posting_id: selectedJobId,
-        status: 'applied',
-        source: 'manual_entry',
-        created_by: user?.id,
-        custom_data: {}
-      };
-
-      // Handle hardcoded basic fields (we will add these to the UI separately)
-      // But wait, FormRenderer handles the dynamic part.
-      // I'll add the basic fields to the processedData from the separate inputs.
-      // See render below.
-
-      // Actually, let's just merge the basic fields into processedData before mapping.
-      // But `handleSubmit` receives `formData` from `FormRenderer`.
-      // I need to combine it with the basic fields state.
-    } catch (error: any) {
-      onError(error.message || 'Failed to create application');
-      setLoading(false);
-    }
-  };
-
-  // We need a wrapper to combine basic fields and dynamic form
-  const [basicInfo, setBasicInfo] = useState({
-    applicant_first_name: '',
-    applicant_last_name: '',
-    applicant_email: '',
-    applicant_phone: ''
-  });
-
   const handleFinalSubmit = async (dynamicData: Record<string, any>) => {
-    if (!selectedJobId) {
-      onError('Please select a job position');
+    if (!selectedPosition) {
+      onError('Please select a position');
       return;
     }
     if (!basicInfo.applicant_first_name || !basicInfo.applicant_last_name || !basicInfo.applicant_email) {
@@ -156,23 +77,9 @@ export default function AddApplicationModal({ isOpen, onClose, onSuccess, onErro
     setLoading(true);
 
     try {
-      // 1. Handle File Uploads in Dynamic Data
-      const processedDynamicData: Record<string, any> = { ...dynamicData };
-
-      for (const [key, value] of Object.entries(dynamicData)) {
-        if (value instanceof File) {
-          const url = await uploadFile(value, 'applicant-cvs', 'uploads');
-          if (url) {
-            processedDynamicData[key] = url;
-          } else {
-            throw new Error(`Failed to upload file for ${key}`);
-          }
-        }
-      }
-
-      // 2. Construct Payload
+      // 1. Prepare Payload
       const payload: any = {
-        job_posting_id: selectedJobId,
+        position: selectedPosition,
         applicant_first_name: basicInfo.applicant_first_name,
         applicant_last_name: basicInfo.applicant_last_name,
         applicant_email: basicInfo.applicant_email,
@@ -183,24 +90,22 @@ export default function AddApplicationModal({ isOpen, onClose, onSuccess, onErro
         custom_data: {}
       };
 
-      // Map dynamic fields
+      // 2. Separate Files and Data
+      const filesToUpload: { key: string; file: File; fieldSchema?: FormField }[] = [];
       const standardColumns = ['cv_url', 'cover_letter', 'portfolio_url', 'linkedin_url'];
 
-      // Special mapping for resume_url -> cv_url
-      if (processedDynamicData['resume_url']) {
-        payload['cv_url'] = processedDynamicData['resume_url'];
-        delete processedDynamicData['resume_url'];
-      }
-
-      for (const [key, value] of Object.entries(processedDynamicData)) {
-        if (standardColumns.includes(key)) {
+      for (const [key, value] of Object.entries(dynamicData)) {
+        if (value instanceof File) {
+          const fieldSchema = formSchema.find(f => f.id === key);
+          filesToUpload.push({ key, file: value, fieldSchema });
+        } else if (standardColumns.includes(key)) {
           payload[key] = value;
         } else {
           payload.custom_data[key] = value;
         }
       }
 
-      // 3. Call API
+      // 3. Create Application Record
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('No active session');
 
@@ -221,20 +126,54 @@ export default function AddApplicationModal({ isOpen, onClose, onSuccess, onErro
 
       const result = await response.json();
 
-      if (response.ok && result.data) {
-        onSuccess();
-        onClose();
-        // Reset form
-        setBasicInfo({
-          applicant_first_name: '',
-          applicant_last_name: '',
-          applicant_email: '',
-          applicant_phone: ''
-        });
-        setSelectedJobId('');
-      } else {
+      if (!response.ok || !result.data) {
         throw new Error(result.error?.message || 'Failed to create application');
       }
+
+      const applicationId = result.data.id; // Assuming the function returns the created ID
+
+      // 4. Upload Files and Save Metadata
+      for (const { key, file, fieldSchema } of filesToUpload) {
+        const url = await uploadFile(file, 'applicant-cvs', 'uploads');
+        if (url) {
+          // If it's the CV, update the application record
+          if (key === 'resume_url' || key === 'cv_url') {
+            await supabase
+              .from('applications')
+              .update({ cv_url: url })
+              .eq('id', applicationId);
+          }
+
+          // Save to application_documents
+          const complianceTags = [];
+          if (fieldSchema?.complianceType && fieldSchema.complianceType !== 'none') {
+            if (fieldSchema.complianceType === 'both') {
+              complianceTags.push('home_office', 'recruitment');
+            } else {
+              complianceTags.push(fieldSchema.complianceType);
+            }
+          }
+
+          await supabase.from('application_documents').insert({
+            application_id: applicationId,
+            document_url: url,
+            document_name: file.name,
+            category: fieldSchema?.documentCategory || 'other',
+            compliance_tags: complianceTags,
+            uploaded_by: user?.id
+          });
+        }
+      }
+
+      onSuccess();
+      onClose();
+      setBasicInfo({
+        applicant_first_name: '',
+        applicant_last_name: '',
+        applicant_email: '',
+        applicant_phone: ''
+      });
+      setSelectedPosition('');
 
     } catch (error: any) {
       onError(error.message || 'Failed to create application');
@@ -246,21 +185,23 @@ export default function AddApplicationModal({ isOpen, onClose, onSuccess, onErro
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Add New Application" maxWidth="max-w-3xl">
       <div className="space-y-6">
-        {/* Job Selection */}
+        {/* Position Selection */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Job Position *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Position Applied For *</label>
           <select
             required
-            value={selectedJobId}
-            onChange={(e) => setSelectedJobId(e.target.value)}
+            value={selectedPosition}
+            onChange={(e) => setSelectedPosition(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
           >
-            <option value="">Select Job Position</option>
-            {jobs.map((job) => (
-              <option key={job.id} value={job.id}>
-                {job.job_title} - {job.department}
-              </option>
-            ))}
+            <option value="">Select Position</option>
+            <option value="Live in Carer">Live in Carer</option>
+            <option value="Support Worker">Support Worker</option>
+            <option value="Manager">Manager</option>
+            <option value="Supervisor">Supervisor</option>
+            <option value="Cleaner">Cleaner</option>
+            <option value="Driver">Driver</option>
+            <option value="Other">Other</option>
           </select>
         </div>
 

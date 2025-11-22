@@ -15,7 +15,9 @@ export default function RecruitSettingsPage() {
 
   // Form Builder State
   const [formTemplates, setFormTemplates] = useState<any[]>([]);
-  const [selectedForm, setSelectedForm] = useState<any>(null);
+  const [selectedFormId, setSelectedFormId] = useState<string | null>(null);
+
+  const selectedForm = formTemplates.find(f => f.id === selectedFormId);
 
   // Mock Data for other tabs
   const [workflows, setWorkflows] = useState([
@@ -50,15 +52,15 @@ export default function RecruitSettingsPage() {
 
     if (data) {
       setFormTemplates(data);
-      if (data.length > 0 && !selectedForm) {
-        setSelectedForm(data[0]);
+      if (data.length > 0 && !selectedFormId) {
+        setSelectedFormId(data[0].id);
       }
     }
     setLoading(false);
   }
 
   async function saveFormSchema(schema: FormField[]) {
-    if (!selectedForm) return;
+    if (!selectedFormId) return;
 
     setLoading(true);
     const { error } = await supabase
@@ -67,7 +69,7 @@ export default function RecruitSettingsPage() {
         schema,
         updated_at: new Date().toISOString()
       })
-      .eq('id', selectedForm.id);
+      .eq('id', selectedFormId);
 
     if (error) {
       setToast({ message: 'Failed to save form', type: 'error' });
@@ -103,8 +105,8 @@ export default function RecruitSettingsPage() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id as TabType)}
               className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition ${activeTab === tab.id
-                  ? 'border-indigo-500 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-indigo-500 text-indigo-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
             >
               {tab.label}
@@ -181,8 +183,8 @@ export default function RecruitSettingsPage() {
               <div className="flex space-x-2">
                 <select
                   className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-indigo-500 focus:border-indigo-500"
-                  value={selectedForm?.id || ''}
-                  onChange={(e) => setSelectedForm(formTemplates.find(f => f.id === e.target.value))}
+                  value={selectedFormId || ''}
+                  onChange={(e) => setSelectedFormId(e.target.value)}
                 >
                   {formTemplates.map(form => (
                     <option key={form.id} value={form.id}>{form.name}</option>
@@ -193,6 +195,7 @@ export default function RecruitSettingsPage() {
 
             {selectedForm ? (
               <FormBuilder
+                key={selectedForm.id}
                 initialSchema={selectedForm.schema}
                 onSave={saveFormSchema}
               />

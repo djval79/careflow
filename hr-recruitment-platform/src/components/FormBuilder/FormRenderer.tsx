@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FormField } from './FormBuilder';
+import SignaturePad from './SignaturePad';
 
 interface FormRendererProps {
     schema: FormField[];
@@ -132,6 +133,24 @@ export default function FormRenderer({
                             }}
                             className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none ${errors[field.id] ? 'border-red-300' : 'border-gray-300'
                                 }`}
+                        />
+                    )}
+
+                    {field.type === 'number' && (
+                        <input
+                            type="number"
+                            value={formData[field.id] || ''}
+                            onChange={(e) => handleChange(field.id, e.target.value)}
+                            placeholder={field.placeholder}
+                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none ${errors[field.id] ? 'border-red-300' : 'border-gray-300'
+                                }`}
+                        />
+                    )}
+
+                    {field.type === 'signature' && (
+                        <SignaturePad
+                            value={formData[field.id]}
+                            onChange={(value) => handleChange(field.id, value)}
                         />
                     )}
                     {errors[field.id] && (

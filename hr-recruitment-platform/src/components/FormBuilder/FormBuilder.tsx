@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, MoveUp, MoveDown, Save } from 'lucide-react';
 
-export type FieldType = 'text' | 'textarea' | 'select' | 'checkbox' | 'date' | 'file';
+export type FieldType = 'text' | 'textarea' | 'number' | 'select' | 'checkbox' | 'date' | 'file' | 'signature';
 
 export interface FormField {
     id: string;
@@ -11,6 +11,8 @@ export interface FormField {
     placeholder?: string;
     options?: string[]; // For select inputs
     accept?: string; // For file inputs
+    documentCategory?: 'identity' | 'right_to_work' | 'qualification' | 'reference' | 'other';
+    complianceType?: 'home_office' | 'recruitment' | 'both' | 'none';
 }
 
 interface FormBuilderProps {
@@ -60,6 +62,36 @@ export default function FormBuilder({ initialSchema = [], onSave }: FormBuilderP
     return (
         <div className="bg-white rounded-lg shadow p-6">
             <div className="space-y-6">
+                {/* Standard Fields Section */}
+                <div className="border border-gray-200 rounded-lg p-4 bg-gray-100">
+                    <h3 className="text-sm font-medium text-gray-900 mb-4">Standard Fields (Always Included)</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 opacity-75">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Position Applied For</label>
+                            <input type="text" disabled className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50" value="Dropdown Selection" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                            <input type="text" disabled className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50" value="Text Input" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                            <input type="text" disabled className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50" value="Text Input" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                            <input type="email" disabled className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50" value="Email Input" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                            <input type="tel" disabled className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50" value="Phone Input" />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="border-t border-gray-200 pt-4">
+                    <h3 className="text-sm font-medium text-gray-900 mb-4">Custom Questions</h3>
+                </div>
                 {fields.map((field, index) => (
                     <div key={field.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                         <div className="flex items-start justify-between mb-4">
@@ -82,10 +114,12 @@ export default function FormBuilder({ initialSchema = [], onSave }: FormBuilderP
                                     >
                                         <option value="text">Short Text</option>
                                         <option value="textarea">Long Text</option>
+                                        <option value="number">Number</option>
                                         <option value="select">Dropdown</option>
                                         <option value="checkbox">Checkbox</option>
                                         <option value="date">Date</option>
                                         <option value="file">File Upload</option>
+                                        <option value="signature">Signature</option>
                                     </select>
                                 </div>
                             </div>
@@ -138,6 +172,38 @@ export default function FormBuilder({ initialSchema = [], onSave }: FormBuilderP
                                         placeholder="Option 1, Option 2, Option 3"
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                                     />
+                                </div>
+                            )}
+
+                            {field.type === 'file' && (
+                                <div className="col-span-2 grid grid-cols-2 gap-4 mt-2 p-3 bg-white rounded border border-gray-200">
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">Document Category</label>
+                                        <select
+                                            value={field.documentCategory || 'other'}
+                                            onChange={(e) => updateField(index, { documentCategory: e.target.value as any })}
+                                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md"
+                                        >
+                                            <option value="other">Other</option>
+                                            <option value="identity">Identity (Passport, ID)</option>
+                                            <option value="right_to_work">Right to Work</option>
+                                            <option value="qualification">Qualification</option>
+                                            <option value="reference">Reference</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">Compliance Type</label>
+                                        <select
+                                            value={field.complianceType || 'none'}
+                                            onChange={(e) => updateField(index, { complianceType: e.target.value as any })}
+                                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md"
+                                        >
+                                            <option value="none">None</option>
+                                            <option value="home_office">Home Office</option>
+                                            <option value="recruitment">Recruitment</option>
+                                            <option value="both">Both</option>
+                                        </select>
+                                    </div>
                                 </div>
                             )}
                         </div>
