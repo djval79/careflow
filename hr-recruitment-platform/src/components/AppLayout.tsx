@@ -44,6 +44,7 @@ export default function AppLayout() {
     { name: 'Biometric System', href: '/biometric', icon: Fingerprint },
     { name: 'Automation', href: '/automation', icon: Zap },
     { name: 'Letters', href: '/letters', icon: FileText },
+    { name: 'Forms', href: '/forms', icon: FileText },
     { name: 'Settings', href: '/settings', icon: Settings },
     { name: 'Recruit Settings', href: '/recruit-settings', icon: Sliders },
   ];
@@ -99,8 +100,8 @@ export default function AppLayout() {
                     to={item.href}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition ${isActive
-                        ? 'bg-indigo-50 text-indigo-600'
-                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'bg-indigo-50 text-indigo-600'
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                       }`}
                   >
                     <item.icon className="w-5 h-5 mr-3" />
@@ -124,8 +125,8 @@ export default function AppLayout() {
                   key={item.name}
                   to={item.href}
                   className={`group flex items-center px-3 py-3 text-sm font-medium rounded-lg transition ${isActive
-                      ? 'bg-indigo-50 text-indigo-600'
-                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'bg-indigo-50 text-indigo-600'
+                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                     }`}
                 >
                   <item.icon className={`mr-3 flex-shrink-0 h-5 w-5 ${isActive ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-500'

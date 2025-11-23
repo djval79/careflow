@@ -20,6 +20,7 @@ import MessagingPage from './pages/MessagingPage';
 import NoticeBoardPage from './pages/NoticeBoardPage';
 import PerformancePage from './pages/PerformancePage';
 import IntegrationsPage from './pages/IntegrationsPage';
+import FormsPage from './pages/FormsPage';
 
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -107,6 +108,7 @@ function App() {
             <Route path="letters" element={<LettersPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="recruit-settings" element={<RecruitSettingsPage />} />
+            <Route path="forms" element={<FormsPage />} />
           </Route>
 
           {/* Catch all */}
