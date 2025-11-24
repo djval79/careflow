@@ -86,7 +86,6 @@ export default function AddApplicationModal({ isOpen, onClose, onSuccess, onErro
         applicant_phone: basicInfo.applicant_phone,
         status: 'applied',
         source: 'manual_entry',
-        created_by: user?.id,
         custom_data: {}
       };
 
