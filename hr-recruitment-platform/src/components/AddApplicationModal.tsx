@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
-import { supabase, supabaseUrl } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import FormRenderer from './FormBuilder/FormRenderer';
 import { FormField } from './FormBuilder/FormBuilder';
@@ -112,32 +112,18 @@ export default function AddApplicationModal({ isOpen, onClose, onSuccess, onErro
         }
       }
 
-      // 3. Create Application Record
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('No active session');
+      // 3. Create Application Record using direct Supabase insert
+      const { data: applicationData, error: insertError } = await supabase
+        .from('applications')
+        .insert(payload)
+        .select()
+        .single();
 
-      const response = await fetch(
-        `${supabaseUrl}/functions/v1/application-crud`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`
-          },
-          body: JSON.stringify({
-            action: 'create',
-            data: payload
-          })
-        }
-      );
-
-      const result = await response.json();
-
-      if (!response.ok || !result.data) {
-        throw new Error(result.error?.message || 'Failed to create application');
+      if (insertError || !applicationData) {
+        throw new Error(insertError?.message || 'Failed to create application');
       }
 
-      const applicationId = result.data.id; // Assuming the function returns the created ID
+      const applicationId = applicationData.id;
 
       // 4. Upload Files and Save Metadata
       for (const { key, file, fieldSchema } of filesToUpload) {
