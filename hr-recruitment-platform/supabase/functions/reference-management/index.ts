@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
         let result;
 
         switch (action) {
-            case 'CREATE':
+            case 'CREATE': {
                 const createResponse = await fetch(`${supabaseUrl}/rest/v1/applicant_references`, {
                     method: 'POST',
                     headers: {
@@ -67,8 +67,9 @@ Deno.serve(async (req) => {
 
                 result = await createResponse.json();
                 break;
+            }
 
-            case 'UPDATE':
+            case 'UPDATE': {
                 const updateResponse = await fetch(`${supabaseUrl}/rest/v1/applicant_references?id=eq.${data.id}`, {
                     method: 'PATCH',
                     headers: {
@@ -90,8 +91,9 @@ Deno.serve(async (req) => {
 
                 result = await updateResponse.json();
                 break;
+            }
 
-            case 'REQUEST_VERIFICATION':
+            case 'REQUEST_VERIFICATION': {
                 const requestResponse = await fetch(`${supabaseUrl}/rest/v1/applicant_references?id=eq.${data.reference_id}`, {
                     method: 'PATCH',
                     headers: {
@@ -114,8 +116,9 @@ Deno.serve(async (req) => {
 
                 result = await requestResponse.json();
                 break;
+            }
 
-            case 'SUBMIT_RESPONSE':
+            case 'SUBMIT_RESPONSE': {
                 const responseSubmit = await fetch(`${supabaseUrl}/rest/v1/applicant_references?id=eq.${data.reference_id}`, {
                     method: 'PATCH',
                     headers: {
@@ -142,8 +145,9 @@ Deno.serve(async (req) => {
 
                 result = await responseSubmit.json();
                 break;
+            }
 
-            case 'VERIFY':
+            case 'VERIFY': {
                 const verifyResponse = await fetch(`${supabaseUrl}/rest/v1/applicant_references?id=eq.${data.reference_id}`, {
                     method: 'PATCH',
                     headers: {
@@ -168,8 +172,9 @@ Deno.serve(async (req) => {
 
                 result = await verifyResponse.json();
                 break;
+            }
 
-            case 'GET_BY_APPLICATION':
+            case 'GET_BY_APPLICATION': {
                 const getResponse = await fetch(`${supabaseUrl}/rest/v1/applicant_references?application_id=eq.${data.application_id}`, {
                     headers: {
                         'Authorization': `Bearer ${serviceRoleKey}`,
@@ -184,8 +189,9 @@ Deno.serve(async (req) => {
 
                 result = await getResponse.json();
                 break;
+            }
 
-            case 'DELETE':
+            case 'DELETE': {
                 const deleteResponse = await fetch(`${supabaseUrl}/rest/v1/applicant_references?id=eq.${data.id}`, {
                     method: 'DELETE',
                     headers: {
@@ -201,6 +207,7 @@ Deno.serve(async (req) => {
 
                 result = { success: true, message: 'Reference deleted successfully' };
                 break;
+            }
 
             default:
                 throw new Error(`Unknown action: ${action}`);

@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
         let result;
 
         switch (action) {
-            case 'CREATE_VISA_RECORD':
+            case 'CREATE_VISA_RECORD': {
                 const createVisaResponse = await fetch(`${supabaseUrl}/rest/v1/visa_records`, {
                     method: 'POST',
                     headers: {
@@ -68,8 +68,9 @@ Deno.serve(async (req) => {
 
                 result = await createVisaResponse.json();
                 break;
+            }
 
-            case 'CREATE_RTW_CHECK':
+            case 'CREATE_RTW_CHECK': {
                 const createRTWResponse = await fetch(`${supabaseUrl}/rest/v1/right_to_work_checks`, {
                     method: 'POST',
                     headers: {
@@ -92,8 +93,9 @@ Deno.serve(async (req) => {
 
                 result = await createRTWResponse.json();
                 break;
+            }
 
-            case 'CREATE_ALERT':
+            case 'CREATE_ALERT': {
                 const createAlertResponse = await fetch(`${supabaseUrl}/rest/v1/compliance_alerts`, {
                     method: 'POST',
                     headers: {
@@ -117,8 +119,9 @@ Deno.serve(async (req) => {
 
                 result = await createAlertResponse.json();
                 break;
+            }
 
-            case 'GENERATE_AUDIT_PACK':
+            case 'GENERATE_AUDIT_PACK': {
                 const createAuditResponse = await fetch(`${supabaseUrl}/rest/v1/audit_packs`, {
                     method: 'POST',
                     headers: {
@@ -151,8 +154,9 @@ Deno.serve(async (req) => {
 
                 result = await createAuditResponse.json();
                 break;
+            }
 
-            case 'GET_ALERTS':
+            case 'GET_ALERTS': {
                 const alertsResponse = await fetch(`${supabaseUrl}/rest/v1/compliance_alerts?status=eq.active&order=alert_priority.asc,due_date.asc`, {
                     headers: {
                         'Authorization': `Bearer ${serviceRoleKey}`,
@@ -167,8 +171,9 @@ Deno.serve(async (req) => {
 
                 result = await alertsResponse.json();
                 break;
+            }
 
-            case 'ACKNOWLEDGE_ALERT':
+            case 'ACKNOWLEDGE_ALERT': {
                 const acknowledgeResponse = await fetch(`${supabaseUrl}/rest/v1/compliance_alerts?id=eq.${data.alert_id}`, {
                     method: 'PATCH',
                     headers: {
@@ -192,8 +197,9 @@ Deno.serve(async (req) => {
 
                 result = await acknowledgeResponse.json();
                 break;
+            }
 
-            case 'RESOLVE_ALERT':
+            case 'RESOLVE_ALERT': {
                 const resolveResponse = await fetch(`${supabaseUrl}/rest/v1/compliance_alerts?id=eq.${data.alert_id}`, {
                     method: 'PATCH',
                     headers: {
@@ -218,6 +224,7 @@ Deno.serve(async (req) => {
 
                 result = await resolveResponse.json();
                 break;
+            }
 
             default:
                 throw new Error(`Unknown action: ${action}`);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { tenantService, Tenant, Feature } from '@/lib/services/TenantService';
-import { Building2, Check, X, Loader2, Shield } from 'lucide-react';
+import { Building2, Check, X, Loader2, Shield, Save } from 'lucide-react';
 import Toast from '@/components/Toast';
 
 export default function TenantManagementPage() {
@@ -13,6 +13,8 @@ export default function TenantManagementPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+    const [subscriptionPrice, setSubscriptionPrice] = useState('');
+    const [currency, setCurrency] = useState('GBP');
 
     useEffect(() => {
         loadData();
@@ -21,6 +23,8 @@ export default function TenantManagementPage() {
     useEffect(() => {
         if (selectedTenant) {
             loadTenantFeatures(selectedTenant.id);
+            setSubscriptionPrice(selectedTenant.subscription_price?.toString() || '');
+            setCurrency(selectedTenant.currency || 'GBP');
         }
     }, [selectedTenant]);
 
@@ -56,6 +60,31 @@ export default function TenantManagementPage() {
             await loadTenantFeatures(selectedTenant.id);
         } else {
             setToast({ message: 'Failed to update feature', type: 'error' });
+        }
+        setSaving(false);
+    }
+
+    async function saveSubscription() {
+        if (!selectedTenant) return;
+        setSaving(true);
+        const success = await tenantService.updateTenantSubscription(
+            selectedTenant.id,
+            parseFloat(subscriptionPrice) || 0,
+            currency
+        );
+
+        if (success) {
+            setToast({ message: 'Subscription updated successfully', type: 'success' });
+            // Update local state
+            const updatedTenants = tenants.map(t =>
+                t.id === selectedTenant.id
+                    ? { ...t, subscription_price: parseFloat(subscriptionPrice) || 0, currency }
+                    : t
+            );
+            setTenants(updatedTenants);
+            setSelectedTenant({ ...selectedTenant, subscription_price: parseFloat(subscriptionPrice) || 0, currency });
+        } else {
+            setToast({ message: 'Failed to update subscription', type: 'error' });
         }
         setSaving(false);
     }
@@ -117,6 +146,12 @@ export default function TenantManagementPage() {
                                             </p>
                                             <p className="text-xs text-gray-500 mt-1">
                                                 {tenant.subscription_tier}
+                                                {tenant.subscription_price && (
+                                                    <span className="ml-2 text-cyan-600 font-medium">
+                                                        {tenant.currency === 'USD' ? '$' : tenant.currency === 'EUR' ? '€' : '£'}
+                                                        {tenant.subscription_price}
+                                                    </span>
+                                                )}
                                             </p>
                                         </div>
                                     </div>
@@ -141,13 +176,49 @@ export default function TenantManagementPage() {
                                         </p>
                                     </div>
                                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${selectedTenant.subscription_tier === 'enterprise'
-                                            ? 'bg-purple-100 text-purple-800'
-                                            : selectedTenant.subscription_tier === 'premium'
-                                                ? 'bg-blue-100 text-blue-800'
-                                                : 'bg-gray-100 text-gray-800'
+                                        ? 'bg-purple-100 text-purple-800'
+                                        : selectedTenant.subscription_tier === 'premium'
+                                            ? 'bg-blue-100 text-blue-800'
+                                            : 'bg-gray-100 text-gray-800'
                                         }`}>
                                         {selectedTenant.subscription_tier}
                                     </span>
+                                </div>
+                            </div>
+
+                            <div className="p-6 border-b border-gray-200 bg-gray-50">
+                                <h3 className="text-sm font-medium text-gray-900 mb-4">Subscription Details</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-500 mb-1">Price</label>
+                                        <input
+                                            type="number"
+                                            value={subscriptionPrice}
+                                            onChange={(e) => setSubscriptionPrice(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-cyan-500 focus:border-cyan-500"
+                                            placeholder="0.00"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-500 mb-1">Currency</label>
+                                        <select
+                                            value={currency}
+                                            onChange={(e) => setCurrency(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-cyan-500 focus:border-cyan-500"
+                                        >
+                                            <option value="GBP">GBP (£)</option>
+                                            <option value="USD">USD ($)</option>
+                                            <option value="EUR">EUR (€)</option>
+                                        </select>
+                                    </div>
+                                    <button
+                                        onClick={saveSubscription}
+                                        disabled={saving}
+                                        className="flex items-center justify-center px-4 py-2 bg-cyan-600 text-white rounded-md text-sm font-medium hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 disabled:opacity-50"
+                                    >
+                                        <Save className="w-4 h-4 mr-2" />
+                                        Save
+                                    </button>
                                 </div>
                             </div>
 
@@ -171,8 +242,8 @@ export default function TenantManagementPage() {
                                                         <div
                                                             key={feature.id}
                                                             className={`border rounded-lg p-4 transition ${isEnabled
-                                                                    ? 'border-cyan-200 bg-cyan-50'
-                                                                    : 'border-gray-200 bg-gray-50'
+                                                                ? 'border-cyan-200 bg-cyan-50'
+                                                                : 'border-gray-200 bg-gray-50'
                                                                 }`}
                                                         >
                                                             <div className="flex items-start justify-between">

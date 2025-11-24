@@ -5,6 +5,8 @@ export interface Tenant {
     name: string;
     domain: string | null;
     subscription_tier: string;
+    subscription_price?: number;
+    currency?: string;
 }
 
 export interface Feature {
@@ -99,5 +101,23 @@ export const tenantService = {
             return null;
         }
         return data?.api_key ?? null;
+    },
+
+    /** Update tenant subscription details */
+    async updateTenantSubscription(tenantId: string, price: number, currency: string): Promise<boolean> {
+        const { error } = await supabase
+            .from('tenants')
+            .update({
+                subscription_price: price,
+                currency: currency,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', tenantId);
+
+        if (error) {
+            console.error('Error updating tenant subscription:', error);
+            return false;
+        }
+        return true;
     },
 };

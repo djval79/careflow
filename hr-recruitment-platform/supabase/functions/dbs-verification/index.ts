@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
         let result;
 
         switch (action) {
-            case 'CREATE_CERTIFICATE':
+            case 'CREATE_CERTIFICATE': {
                 const createResponse = await fetch(`${supabaseUrl}/rest/v1/dbs_certificates`, {
                     method: 'POST',
                     headers: {
@@ -68,8 +68,9 @@ Deno.serve(async (req) => {
 
                 result = await createResponse.json();
                 break;
+            }
 
-            case 'UPDATE_CERTIFICATE':
+            case 'UPDATE_CERTIFICATE': {
                 const updateResponse = await fetch(`${supabaseUrl}/rest/v1/dbs_certificates?id=eq.${data.id}`, {
                     method: 'PATCH',
                     headers: {
@@ -91,8 +92,9 @@ Deno.serve(async (req) => {
 
                 result = await updateResponse.json();
                 break;
+            }
 
-            case 'VERIFY_ONLINE':
+            case 'VERIFY_ONLINE': {
                 const verifyResponse = await fetch(`${supabaseUrl}/rest/v1/dbs_certificates?id=eq.${data.certificate_id}`, {
                     method: 'PATCH',
                     headers: {
@@ -139,8 +141,9 @@ Deno.serve(async (req) => {
 
                 result = verifiedCert;
                 break;
+            }
 
-            case 'UPLOAD_DOCUMENT':
+            case 'UPLOAD_DOCUMENT': {
                 if (!data.fileData || !data.fileName) {
                     throw new Error('File data and filename are required');
                 }
@@ -193,8 +196,9 @@ Deno.serve(async (req) => {
                 result = await docUpdateResponse.json();
                 result[0].document_url = publicUrl;
                 break;
+            }
 
-            case 'GET_BY_EMPLOYEE':
+            case 'GET_BY_EMPLOYEE': {
                 const getResponse = await fetch(`${supabaseUrl}/rest/v1/dbs_certificates?employee_id=eq.${data.employee_id}&order=created_at.desc`, {
                     headers: {
                         'Authorization': `Bearer ${serviceRoleKey}`,
@@ -209,9 +213,10 @@ Deno.serve(async (req) => {
 
                 result = await getResponse.json();
                 break;
+            }
 
-            case 'CHECK_EXPIRY':
-                const expiryResponse = await fetch(`${supabaseUrl}/rest/v1/dbs_certificates?expiry_date=lte.${new Date(Date.now() + 90*24*60*60*1000).toISOString().split('T')[0]}`, {
+            case 'CHECK_EXPIRY': {
+                const expiryResponse = await fetch(`${supabaseUrl}/rest/v1/dbs_certificates?expiry_date=lte.${new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}`, {
                     headers: {
                         'Authorization': `Bearer ${serviceRoleKey}`,
                         'apikey': serviceRoleKey
@@ -225,6 +230,7 @@ Deno.serve(async (req) => {
 
                 result = await expiryResponse.json();
                 break;
+            }
 
             default:
                 throw new Error(`Unknown action: ${action}`);

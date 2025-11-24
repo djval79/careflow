@@ -272,7 +272,7 @@ serve(async (req: Request) => {
                     result = await sendEmail(params, logger);
                     break;
 
-                case 'email_send_template':
+                case 'email_send_template': {
                     // Get template from database
                     const { data: template } = await supabaseClient
                         .from('email_templates')
@@ -297,15 +297,17 @@ serve(async (req: Request) => {
                         text,
                     }, logger);
                     break;
+                }
 
-                case 'list_integrations':
+                case 'list_integrations': {
                     const { data: integrations } = await supabaseClient
                         .from('integrations')
                         .select('id, service_name, display_name, is_active, is_connected, last_sync_at');
                     result = integrations;
                     break;
+                }
 
-                case 'get_integration_logs':
+                case 'get_integration_logs': {
                     const { limit = 50, service_name } = params;
                     let logsQuery = supabaseClient
                         .from('integration_logs')
@@ -320,6 +322,7 @@ serve(async (req: Request) => {
                     const { data: logs } = await logsQuery;
                     result = logs;
                     break;
+                }
 
                 default:
                     throw new Error(`Unknown action: ${action}`);

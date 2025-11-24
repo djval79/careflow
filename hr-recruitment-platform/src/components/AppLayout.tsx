@@ -19,7 +19,8 @@ import {
   FolderOpen,
   MessageSquare,
   Bell,
-  TrendingUp
+  TrendingUp,
+  Building2
 } from 'lucide-react';
 
 export default function AppLayout() {
@@ -55,6 +56,16 @@ export default function AppLayout() {
   // Filter navigation based on enabled features
   const navigation = allNavigation.filter(item => hasFeature(item.feature));
 
+  // Add Tenant Management for super admins
+  if (profile?.is_super_admin) {
+    navigation.push({
+      name: 'Tenant Management',
+      href: '/tenant-management',
+      icon: Building2,
+      feature: 'system'
+    });
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Top Navigation Bar */}
@@ -71,8 +82,8 @@ export default function AppLayout() {
 
               <div className="flex items-center ml-2 lg:ml-0">
                 <img
-                  src="/assets/branding/novumsolvo-logo.jpg"
-                  alt="NovumSolvo"
+                  src="/pwa-192x192.png"
+                  alt="NovumFlow"
                   className="h-10 w-auto object-contain"
                 />
                 <span className="ml-3 text-xl font-bold bg-gradient-to-r from-cyan-600 to-cyan-500 bg-clip-text text-transparent">NovumFlow</span>
