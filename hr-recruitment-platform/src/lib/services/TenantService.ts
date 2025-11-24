@@ -1,5 +1,4 @@
 import { supabase } from '../supabase';
-import { User } from '@/contexts/AuthContext';
 
 export interface Tenant {
     id: string;
@@ -22,7 +21,7 @@ export interface Feature {
 export const tenantService = {
     /** Get all tenants */
     async getAllTenants(): Promise<Tenant[]> {
-        const { data, error } = await supabase.from<Tenant>('tenants').select('*');
+        const { data, error } = await supabase.from('tenants').select('*');
         if (error) {
             console.error('Error fetching tenants:', error);
             return [];
@@ -32,7 +31,7 @@ export const tenantService = {
 
     /** Get all defined features */
     async getAllFeatures(): Promise<Feature[]> {
-        const { data, error } = await supabase.from<Feature>('features').select('*');
+        const { data, error } = await supabase.from('features').select('*');
         if (error) {
             console.error('Error fetching features:', error);
             return [];

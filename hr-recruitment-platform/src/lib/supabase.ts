@@ -18,6 +18,9 @@ export interface UserProfile {
   department: string | null;
   position: string | null;
   is_active: boolean;
+  tenant_id: string | null;
+  is_super_admin: boolean;
   created_at: string;
   updated_at: string;
 }
+

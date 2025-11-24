@@ -29,7 +29,7 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
             }
             // Fetch tenant record
             const { data: tenantData, error: tenantError } = await supabase
-                .from<Tenant>('tenants')
+                .from('tenants')
                 .select('*')
                 .eq('id', profile.tenant_id)
                 .single();
