@@ -70,7 +70,7 @@ export default function AddJobModal({ isOpen, onClose, onSuccess, onError }: Add
           status: 'draft'
         });
       } else {
-        throw new Error(result.error?.message || 'Failed to create job posting');
+        throw new Error('Failed to create job posting');
       }
     } catch (error: any) {
       onError(error.message || 'Failed to create job posting');
