@@ -1,0 +1,7 @@
+{
+  "name": "CareFlow AI",
+  "description": "A comprehensive Care Management System integrating rostering, care planning, and risk assessments. Features AI-driven care plan generation using Gemini 2.5 Flash.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
