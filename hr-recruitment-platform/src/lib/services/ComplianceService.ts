@@ -468,6 +468,65 @@ class ComplianceService {
             compliance_summary
         };
     }
+    // ============================================
+    // COMPLIANCE SETTINGS
+    // ============================================
+
+    async getSettings(): Promise<any> {
+        const { data, error } = await supabase
+            .from('company_settings')
+            .select('metadata')
+            .single();
+
+        if (error) {
+            console.error('Error fetching company settings:', error);
+            return {
+                dbs_renewal_months: 36,
+                rtw_check_frequency_months: 12,
+                training_validity: {}
+            };
+        }
+
+        return data?.metadata?.compliance || {
+            dbs_renewal_months: 36,
+            rtw_check_frequency_months: 12,
+            training_validity: {}
+        };
+    }
+
+    async updateSettings(settings: any): Promise<boolean> {
+        // First get existing metadata to merge
+        const { data: current } = await supabase
+            .from('company_settings')
+            .select('metadata')
+            .single();
+
+        const newMetadata = {
+            ...(current?.metadata || {}),
+            compliance: settings
+        };
+
+        const { error } = await supabase
+            .from('company_settings')
+            .update({ metadata: newMetadata })
+            .neq('id', '00000000-0000-0000-0000-000000000000'); // Update all (usually just one row)
+
+        if (error) {
+            console.error('Error updating compliance settings:', error);
+            return false;
+        }
+
+        // Log to audit trail
+        await auditService.log({
+            action: 'UPDATE',
+            entity_type: 'settings',
+            entity_id: 'company_settings',
+            entity_name: 'Compliance Rules',
+            changes: { after: settings }
+        });
+
+        return true;
+    }
 }
 
 export const complianceService = new ComplianceService();
