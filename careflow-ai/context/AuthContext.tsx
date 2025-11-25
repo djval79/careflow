@@ -1,76 +1,82 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, AuthResponse } from '../types';
-import * as authService from '../services/authService';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { User } from '@supabase/supabase-js';
+import { supabase, UserProfile } from '../lib/supabase';
 
 interface AuthContextType {
-  user: User | null;
-  token: string | null;
-  isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
-  isAuthenticated: boolean;
+    user: User | null;
+    profile: UserProfile | null;
+    loading: boolean;
+    signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+    signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('auth_token'));
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+    const [user, setUser] = useState<User | null>(null);
+    const [profile, setProfile] = useState<UserProfile | null>(null);
+    const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const initAuth = async () => {
-      const storedToken = localStorage.getItem('auth_token');
-      if (storedToken) {
-        try {
-          const verifiedUser = await authService.verifyToken(storedToken);
-          if (verifiedUser) {
-            setUser(verifiedUser);
-            setToken(storedToken);
-          } else {
-            logout();
-          }
-        } catch (error) {
-          logout();
+    useEffect(() => {
+        async function loadUser() {
+            setLoading(true);
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                setUser(user);
+
+                if (user) {
+                    const { data: profileData } = await supabase
+                        .from('users_profiles')
+                        .select('*')
+                        .eq('user_id', user.id)
+                        .maybeSingle();
+
+                    setProfile(profileData);
+                }
+            } finally {
+                setLoading(false);
+            }
         }
-      }
-      setIsLoading(false);
-    };
 
-    initAuth();
-  }, []);
+        loadUser();
 
-  const login = async (email: string, password: string) => {
-    const response: AuthResponse = await authService.login(email, password);
-    localStorage.setItem('auth_token', response.token);
-    setToken(response.token);
-    setUser(response.user);
-  };
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user || null);
+            if (session?.user) {
+                supabase
+                    .from('users_profiles')
+                    .select('*')
+                    .eq('user_id', session.user.id)
+                    .maybeSingle()
+                    .then(({ data }) => setProfile(data));
+            } else {
+                setProfile(null);
+            }
+        });
 
-  const logout = () => {
-    localStorage.removeItem('auth_token');
-    setToken(null);
-    setUser(null);
-  };
+        return () => subscription.unsubscribe();
+    }, []);
 
-  return (
-    <AuthContext.Provider value={{ 
-      user, 
-      token, 
-      isLoading, 
-      login, 
-      logout, 
-      isAuthenticated: !!user 
-    }}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
+    async function signIn(email: string, password: string) {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        return { error };
+    }
 
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+    async function signOut() {
+        await supabase.auth.signOut();
+    }
+
+    return (
+        <AuthContext.Provider value={{ user, profile, loading, signIn, signOut }}>
+            {children}
+        </AuthContext.Provider>
+    );
+}
+
+export function useAuth() {
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
+}

@@ -16,8 +16,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-2">
-           <Loader2 className="animate-spin text-primary-600" size={32} />
-           <p className="text-slate-500 text-sm font-medium">Verifying security...</p>
+          <Loader2 className="animate-spin text-primary-600" size={32} />
+          <p className="text-slate-500 text-sm font-medium">Verifying security...</p>
         </div>
       </div>
     );
@@ -30,6 +30,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
     // User is logged in but doesn't have permission
     return <Navigate to="/" replace />;
+  }
+
+  // Mobile App Redirect: Carers go straight to "My Day"
+  if (user?.role === UserRole.CARER && location.pathname === '/') {
+    return <Navigate to="/my-day" replace />;
   }
 
   return <Outlet />;

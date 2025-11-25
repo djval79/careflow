@@ -35,6 +35,7 @@ import DataImport from './pages/DataImport';
 import Feedback from './pages/Feedback';
 import Nutrition from './pages/Nutrition';
 import Inventory from './pages/Inventory';
+import MobileSchedule from './pages/MobileSchedule';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 import { UserRole } from './types';
@@ -67,6 +68,7 @@ const App: React.FC = () => {
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
               <Route path="/" element={<Dashboard />} />
+              <Route path="/my-day" element={<MobileSchedule />} />
               <Route path="/messages" element={<Messages />} />
               <Route path="/telehealth" element={<Telehealth />} />
               <Route path="/help" element={<Help />} />
