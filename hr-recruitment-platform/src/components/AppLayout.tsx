@@ -56,7 +56,15 @@ export default function AppLayout() {
   ];
 
   // Filter navigation based on enabled features
-  const navigation = allNavigation.filter(item => hasFeature(item.feature));
+  // RBAC: Hide restricted items for carers/staff even if feature is enabled
+  const isRestrictedUser = profile?.role === 'carer' || profile?.role === 'staff';
+  const restrictedFeatures = ['hr_module', 'recruitment', 'settings', 'recruit_settings', 'compliance'];
+
+  const navigation = allNavigation.filter(item => {
+    if (!hasFeature(item.feature)) return false;
+    if (isRestrictedUser && restrictedFeatures.includes(item.feature)) return false;
+    return true;
+  });
 
   // Add Tenant Management for super admins
   if (profile?.is_super_admin) {

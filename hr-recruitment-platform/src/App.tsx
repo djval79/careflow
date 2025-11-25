@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { automationService } from '@/lib/services/AutomationService';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { TenantProvider } from './contexts/TenantContext';
 import AppLayout from './components/AppLayout';
@@ -31,10 +31,12 @@ import PrivacyPage from './pages/PrivacyPage';
 import SupportPage from './pages/SupportPage';
 import InspectorDashboard from './pages/InspectorDashboard';
 import StaffPassportPage from './pages/StaffPassportPage';
+import StaffPortalPage from './pages/StaffPortalPage';
 
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -46,6 +48,24 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // RBAC: Smart Redirects
+  // If user is a 'carer' (and NOT a super admin), they are restricted to the Staff Portal and Passport
+  // We allow them to access /staff-portal, /my-passport, /documents, /noticeboard, /training
+  const restrictedRoutes = ['/dashboard', '/hr', '/recruitment', '/settings', '/compliance-dashboard'];
+  const isRestrictedUser = profile?.role === 'carer' || profile?.role === 'staff';
+  const isSuperAdmin = profile?.is_super_admin;
+
+  if (isRestrictedUser && !isSuperAdmin) {
+    // If they are trying to access a restricted route, bounce them to portal
+    // We check if the current path STARTS with any restricted path
+    const isTryingRestricted = restrictedRoutes.some(route => location.pathname.startsWith(route));
+
+    // Also, if they are at root '/', send them to portal instead of dashboard
+    if (location.pathname === '/' || isTryingRestricted) {
+      return <Navigate to="/staff-portal" replace />;
+    }
   }
 
   return <>{children}</>;
@@ -148,6 +168,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <StaffPassportPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/staff-portal"
+              element={
+                <ProtectedRoute>
+                  <StaffPortalPage />
                 </ProtectedRoute>
               }
             />
