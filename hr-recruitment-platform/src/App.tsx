@@ -25,6 +25,8 @@ import PerformancePage from './pages/PerformancePage';
 import IntegrationsPage from './pages/IntegrationsPage';
 import FormsPage from './pages/FormsPage';
 import TenantManagementPage from './pages/TenantManagementPage';
+import ComplianceDashboardPage from './pages/ComplianceDashboardPage';
+import AuditLogPage from './pages/AuditLogPage';
 
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -122,6 +124,8 @@ function App() {
               <Route path="recruit-settings" element={<FeatureRoute feature="recruit_settings"><RecruitSettingsPage /></FeatureRoute>} />
               <Route path="forms" element={<FeatureRoute feature="forms"><FormsPage /></FeatureRoute>} />
               <Route path="tenant-management" element={<TenantManagementPage />} />
+              <Route path="compliance-dashboard" element={<ComplianceDashboardPage />} />
+              <Route path="audit-logs" element={<AuditLogPage />} />
             </Route>
 
             {/* Catch all */}

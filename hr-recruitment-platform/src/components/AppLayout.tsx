@@ -20,7 +20,9 @@ import {
   MessageSquare,
   Bell,
   TrendingUp,
-  Building2
+  Building2,
+  History,
+  ShieldCheck
 } from 'lucide-react';
 
 export default function AppLayout() {
@@ -64,7 +66,21 @@ export default function AppLayout() {
       icon: Building2,
       feature: 'system'
     });
+    navigation.push({
+      name: 'Audit Logs',
+      href: '/audit-logs',
+      icon: History,
+      feature: 'system'
+    });
   }
+
+  // Add Compliance Dashboard (available to all users)
+  navigation.push({
+    name: 'CQC Compliance',
+    href: '/compliance-dashboard',
+    icon: ShieldCheck,
+    feature: 'system'
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">

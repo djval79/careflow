@@ -5,6 +5,7 @@ import { tenantService, Tenant, Feature } from '@/lib/services/TenantService';
 
 interface TenantContextValue {
     tenant: Tenant | null;
+    currentTenant: Tenant | null; // Alias for tenant
     features: Feature[];
     loading: boolean;
     /** Check if a feature is enabled for the current tenant */
@@ -61,7 +62,7 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
     };
 
     return (
-        <TenantContext.Provider value={{ tenant, features, loading, hasFeature }}>
+        <TenantContext.Provider value={{ tenant, currentTenant: tenant, features, loading, hasFeature }}>
             {children}
         </TenantContext.Provider>
     );
