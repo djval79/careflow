@@ -38,6 +38,7 @@ import Feedback from './pages/Feedback';
 import Nutrition from './pages/Nutrition';
 import Inventory from './pages/Inventory';
 import MobileSchedule from './pages/MobileSchedule';
+import TenantSettings from './pages/TenantSettings';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 import { TenantProvider } from './context/TenantContext';
@@ -110,6 +111,7 @@ const App: React.FC = () => {
                   <Route path="/users" element={<UserManagement />} />
                   <Route path="/import" element={<DataImport />} />
                   <Route path="/feedback" element={<Feedback />} />
+                  <Route path="/tenant-settings" element={<TenantSettings />} />
                 </Route>
 
                 {/* All Roles (Content differs inside component) */}

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { LayoutDashboard, Calendar, Users, FileHeart, BadgePoundSterling, LogOut, BarChart3, Settings, Mail, Briefcase, Map, Blocks, Pill, ClipboardCheck, GraduationCap, ShieldAlert, UserPlus, PhoneIncoming, Video, FolderOpen, CheckSquare, HelpCircle, Box, Receipt, Store, Coffee, Lock, Upload, ThumbsUp, Utensils, Package } from 'lucide-react';
+import { LayoutDashboard, Calendar, Users, FileHeart, BadgePoundSterling, LogOut, BarChart3, Settings, Mail, Briefcase, Map, Blocks, Pill, ClipboardCheck, GraduationCap, ShieldAlert, UserPlus, PhoneIncoming, Video, FolderOpen, CheckSquare, HelpCircle, Box, Receipt, Store, Coffee, Lock, Upload, ThumbsUp, Utensils, Package, Building2 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { UserRole } from '../types';
@@ -203,6 +203,12 @@ const Sidebar: React.FC = () => {
       icon: Upload,
       label: 'Data Import',
       path: '/import',
+      roles: [UserRole.ADMIN]
+    },
+    {
+      icon: Building2,
+      label: 'Organization',
+      path: '/tenant-settings',
       roles: [UserRole.ADMIN]
     },
     {
