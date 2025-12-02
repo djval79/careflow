@@ -215,10 +215,13 @@ export default function FormsPage() {
             setActiveTab('all');
         } catch (error) {
             console.error('Template upload error:', error);
-            setToast({
-                message: error instanceof Error ? error.message : 'Failed to import template',
-                type: 'error'
-            });
+            let message = 'Failed to import template';
+            if (error instanceof SyntaxError) {
+                message = 'Invalid JSON format. Please ensure the file contains valid JSON data.';
+            } else if (error instanceof Error) {
+                message = error.message;
+            }
+            setToast({ message, type: 'error' });
         } finally {
             setUploadingTemplate(false);
             // Reset file input

@@ -7,7 +7,7 @@
             "deno.ns",
             "esnext"
         ],
-        "jsx": "react",
+        "jsx": "react-jsx",
         "jsxImportSource": "react"
     },
     "importMap": "./import_map.json",

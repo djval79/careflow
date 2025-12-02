@@ -5,6 +5,7 @@ declare const Deno: any;
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 // @deno-types="https://esm.sh/@supabase/supabase-js@2"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { crypto } from "https://deno.land/std@0.168.0/crypto/mod.ts";
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -12,6 +13,21 @@ const corsHeaders = {
     'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
     'Access-Control-Max-Age': '86400',
 };
+
+async function generateHmacSignature(payload: string, secret: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+        "raw",
+        encoder.encode(secret),
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign"]
+    );
+    const signed = await crypto.subtle.sign("HMAC", key, encoder.encode(payload));
+    return Array.from(new Uint8Array(signed))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+}
 
 serve(async (req: Request) => {
     if (req.method === 'OPTIONS') {
@@ -51,6 +67,31 @@ serve(async (req: Request) => {
                 throw new Error(`Failed to create employee: ${insertError.message}`);
             }
 
+            // Trigger webhook to CareFlow AI for onboarding
+            const careflowWebhookSecret = Deno.env.get('CAREFLOW_WEBHOOK_SECRET');
+            const careflowSyncEmployeeUrl = Deno.env.get('CAREFLOW_SYNC_EMPLOYEE_URL');
+
+            if (careflowWebhookSecret && careflowSyncEmployeeUrl) {
+                const webhookPayload = {
+                    action: 'employee.created',
+                    employee: { ...data, id: user.id }, // Assuming data contains full employee info, and user.id is the employee's ID in HR platform
+                    tenant_id: user.id // Placeholder for tenant ID, adjust as per your multi-tenancy model
+                };
+                const jsonPayload = JSON.stringify(webhookPayload);
+                const signature = await generateHmacSignature(jsonPayload, careflowWebhookSecret);
+
+                await fetch(careflowSyncEmployeeUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-NovumFlow-Signature': signature,
+                    },
+                    body: jsonPayload,
+                });
+            } else {
+                console.warn('CareFlow webhook secret or URL not set. Skipping webhook.');
+            }
+
             // Log audit
             await supabase.from('audit_logs').insert({
                 user_id: user.id,
@@ -62,6 +103,94 @@ serve(async (req: Request) => {
 
             return new Response(
                 JSON.stringify({ data: { message: 'Employee created successfully' } }),
+                {
+                    status: 200,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                }
+            );
+        } else if (action === 'update') {
+            const { employee_id, ...updateData } = data;
+            if (!employee_id) {
+                throw new Error('Employee ID is required for update action');
+            }
+
+            const { error: updateError } = await supabase
+                .from('employees')
+                .update({
+                    ...updateData,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', employee_id);
+
+            if (updateError) {
+                throw new Error(`Failed to update employee: ${updateError.message}`);
+            }
+
+            await supabase.from('audit_logs').insert({
+                user_id: user.id,
+                action: 'UPDATE_EMPLOYEE',
+                entity_type: 'employees',
+                entity_id: employee_id,
+                timestamp: new Date().toISOString()
+            });
+
+            return new Response(
+                JSON.stringify({ data: { message: 'Employee updated successfully' } }),
+                {
+                    status: 200,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                }
+            );
+        } else if (action === 'delete') {
+            const { employee_id } = data;
+            if (!employee_id) {
+                throw new Error('Employee ID is required for delete action');
+            }
+
+            const { error: deleteError } = await supabase
+                .from('employees')
+                .update({ status: 'terminated', updated_at: new Date().toISOString() })
+                .eq('id', employee_id);
+
+            if (deleteError) {
+                throw new Error(`Failed to delete employee: ${deleteError.message}`);
+            }
+
+            // Trigger webhook to CareFlow AI for offboarding
+            const careflowWebhookSecret = Deno.env.get('CAREFLOW_WEBHOOK_SECRET');
+            const careflowSyncEmployeeUrl = Deno.env.get('CAREFLOW_SYNC_EMPLOYEE_URL');
+
+            if (careflowWebhookSecret && careflowSyncEmployeeUrl) {
+                const webhookPayload = {
+                    action: 'employee.deleted', // Use 'deleted' action for offboarding
+                    employee: { id: employee_id, status: 'terminated' }, // Send minimal data
+                    tenant_id: user.id // Placeholder for tenant ID
+                };
+                const jsonPayload = JSON.stringify(webhookPayload);
+                const signature = await generateHmacSignature(jsonPayload, careflowWebhookSecret);
+
+                await fetch(careflowSyncEmployeeUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-NovumFlow-Signature': signature,
+                    },
+                    body: jsonPayload,
+                });
+            } else {
+                console.warn('CareFlow webhook secret or URL not set. Skipping webhook for offboarding.');
+            }
+
+            await supabase.from('audit_logs').insert({
+                user_id: user.id,
+                action: 'DELETE_EMPLOYEE',
+                entity_type: 'employees',
+                entity_id: employee_id,
+                timestamp: new Date().toISOString()
+            });
+
+            return new Response(
+                JSON.stringify({ data: { message: 'Employee deleted successfully' } }),
                 {
                     status: 200,
                     headers: { ...corsHeaders, 'Content-Type': 'application/json' }

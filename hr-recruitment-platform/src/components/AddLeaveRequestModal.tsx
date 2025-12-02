@@ -63,7 +63,7 @@ export default function AddLeaveRequestModal({ isOpen, onClose, onSuccess, onErr
       }
 
       const response = await fetch(
-        `${supabaseUrl}/functions/v1/leave-request-crud`,
+        `${supabaseUrl}/functions/v1/process-leave-request`,
         {
           method: 'POST',
           headers: {
@@ -71,8 +71,7 @@ export default function AddLeaveRequestModal({ isOpen, onClose, onSuccess, onErr
             'Authorization': `Bearer ${session.access_token}`
           },
           body: JSON.stringify({
-            action: 'create',
-            data: {
+            leaveRequest: {
               ...formData,
               total_days: totalDays,
               requested_by: user?.id

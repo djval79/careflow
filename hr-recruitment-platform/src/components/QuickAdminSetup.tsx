@@ -26,7 +26,7 @@ export default function QuickAdminSetup() {
     try {
       // Create the user account
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: email,
+        email: email.trim(),
         password: password,
         options: {
           emailRedirectTo: `${window.location.origin}/dashboard`
@@ -48,7 +48,7 @@ export default function QuickAdminSetup() {
             permissions: JSON.stringify([
               'create_jobs',
               'manage_applications',
-              'schedule_interviews', 
+              'schedule_interviews',
               'manage_employees',
               'create_announcements',
               'manage_documents',
@@ -75,7 +75,7 @@ export default function QuickAdminSetup() {
         });
 
         setSuccess(true);
-        
+
         // Redirect to dashboard after 3 seconds
         setTimeout(() => {
           window.location.href = '/dashboard';
@@ -124,7 +124,7 @@ export default function QuickAdminSetup() {
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
             />
           </div>
-          
+
           <div>
             <input
               type="password"

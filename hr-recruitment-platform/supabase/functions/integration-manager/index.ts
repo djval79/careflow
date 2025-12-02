@@ -312,6 +312,38 @@ serve(async (req: Request) => {
                     break;
                 }
 
+                case 'check_connection': {
+                    const { service_name } = params;
+                    let isConnected = false;
+                    let message = '';
+
+                    if (service_name === 'slack') {
+                        isConnected = !!Deno.env.get('SLACK_BOT_TOKEN');
+                        message = isConnected ? 'Slack token found' : 'SLACK_BOT_TOKEN not set';
+                    } else if (service_name === 'email') {
+                        isConnected = !!Deno.env.get('SENDGRID_API_KEY');
+                        message = isConnected ? 'SendGrid API key found' : 'SENDGRID_API_KEY not set';
+                    } else if (service_name === 'zoom') {
+                        isConnected = !!Deno.env.get('ZOOM_ACCESS_TOKEN');
+                        message = isConnected ? 'Zoom token found' : 'ZOOM_ACCESS_TOKEN not set';
+                    } else {
+                        // For others, assume connected if active (or implement specific checks)
+                        isConnected = true;
+                        message = 'Service enabled';
+                    }
+
+                    if (isConnected) {
+                        // Update database
+                        await supabaseClient
+                            .from('integrations')
+                            .update({ is_connected: true, last_sync_at: new Date().toISOString() })
+                            .eq('service_name', service_name);
+                    }
+
+                    result = { connected: isConnected, message };
+                    break;
+                }
+
                 case 'get_integration_logs': {
                     const { limit = 50, service_name } = params;
                     let logsQuery = supabaseClient

@@ -1,24 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/contexts/AuthContext';
-import {
-  Plus,
-  Search,
-  Download,
-  Edit,
-  Trash2,
-  FileText,
-  Calendar,
-  Clock,
-  User,
-  Upload
-} from 'lucide-react';
-import { format } from 'date-fns';
-import AddEmployeeModal from '@/components/AddEmployeeModal';
-import AddLeaveRequestModal from '@/components/AddLeaveRequestModal';
+import { callEmployeeCrud } from '@/lib/employeeCrud';
+import EditEmployeeModal from '@/components/EditEmployeeModal';
+import HRAnalyticsDashboard from '@/components/HRAnalyticsDashboard';
 import Toast from '@/components/Toast';
 
-type TabType = 'employees' | 'documents' | 'attendance' | 'leaves' | 'shifts';
+type TabType = 'employees' | 'documents' | 'attendance' | 'leaves' | 'shifts' | 'analytics';
 
 export default function HRModulePage() {
   const [activeTab, setActiveTab] = useState<TabType>('employees');
@@ -31,6 +16,8 @@ export default function HRModulePage() {
   const [loading, setLoading] = useState(false);
   const [showAddEmployeeModal, setShowAddEmployeeModal] = useState(false);
   const [showAddLeaveModal, setShowAddLeaveModal] = useState(false);
+  const [showEditEmployeeModal, setShowEditEmployeeModal] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
   const { user } = useAuth();
 
@@ -39,6 +26,12 @@ export default function HRModulePage() {
   }, [activeTab]);
 
   async function loadData() {
+    // Only load data for specific tabs, analytics will load its own
+    if (activeTab === 'analytics') {
+      setLoading(false); // Analytics dashboard will manage its own loading
+      return;
+    }
+
     setLoading(true);
     try {
       switch (activeTab) {
@@ -157,30 +150,38 @@ export default function HRModulePage() {
   }
 
   async function deleteEmployee(employeeId: string) {
-    if (window.confirm('Are you sure you want to delete this employee?')) {
-      const { error } = await supabase
-        .from('employees')
-        .delete()
-        .eq('id', employeeId);
-
-      if (!error) {
-        setToast({ message: 'Employee deleted successfully', type: 'success' });
+    if (window.confirm('Are you sure you want to delete this employee? This will set their status to terminated.')) {
+      try {
+        await callEmployeeCrud('delete', { employee_id: employeeId });
+        setToast({ message: 'Employee terminated successfully', type: 'success' });
         loadData();
-        await supabase.from('audit_logs').insert({
-          user_id: user?.id,
-          action: 'DELETE_EMPLOYEE',
-          entity_type: 'employees',
-          entity_id: employeeId,
-          timestamp: new Date().toISOString()
-        });
-      } else {
-        setToast({ message: 'Error deleting employee', type: 'error' });
+      } catch (error: any) {
+        setToast({ message: error.message || 'Error terminating employee', type: 'error' });
       }
     }
   }
 
   function editEmployee(employee: any) {
-    setToast({ message: 'Employee edit functionality will be available in the next update', type: 'warning' });
+    setSelectedEmployee(employee);
+    setShowEditEmployeeModal(true);
+  }
+
+  async function handleGenerateDocument(employee: any, templateId: string) {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-document', {
+        body: {
+          template_id: templateId,
+          employee_id: employee.id,
+        },
+      });
+
+      if (error) throw error;
+
+      setToast({ message: 'Document generated successfully!', type: 'success' });
+      // You might want to open the document here, or provide a link
+    } catch (error: any) {
+      setToast({ message: error.message || 'Failed to generate document', type: 'error' });
+    }
   }
 
   function viewEmployeeDetails(employee: any) {
@@ -205,6 +206,7 @@ export default function HRModulePage() {
     { id: 'attendance', label: 'Attendance', icon: Clock },
     { id: 'leaves', label: 'Leave Requests', icon: Calendar },
     { id: 'shifts', label: 'Shifts', icon: Clock },
+    { id: 'analytics', label: 'Analytics', icon: BarChart },
   ];
 
   const filteredEmployees = employees.filter(emp =>
@@ -336,6 +338,13 @@ export default function HRModulePage() {
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
+                            <button
+                              onClick={() => handleGenerateDocument(emp, '2')} // Using hardcoded template ID '2' for contract
+                              className="text-gray-600 hover:text-gray-900 p-1 rounded"
+                              title="Generate Document"
+                            >
+                              <FileText className="w-4 h-4" />
+                            </button>
                           </td>
                         </tr>
                       ))
@@ -385,7 +394,10 @@ export default function HRModulePage() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
                             <button
-                              onClick={() => setToast({ message: 'Document download will be available soon', type: 'warning' })}
+                              onClick={() => {
+                                const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(doc.file_path);
+                                window.open(publicUrl, '_blank');
+                              }}
                               className="text-indigo-600 hover:text-indigo-900 mr-3 p-1 rounded"
                               title="Download Document"
                             >
@@ -473,16 +485,12 @@ export default function HRModulePage() {
               </div>
             )}
 
-            {/* Attendance and Shifts - Simplified views */}
-            {(activeTab === 'attendance' || activeTab === 'shifts') && (
-              <div className="p-8 text-center">
-                <p className="text-gray-500">
-                  {activeTab === 'attendance' ? `${attendance.length} attendance records found` : `${shifts.length} shifts configured`}
-                </p>
-                <p className="text-sm text-gray-400 mt-2">
-                  Detailed view coming soon
-                </p>
-              </div>
+            {/* Analytics Dashboard */}
+            {activeTab === 'analytics' && (
+              <HRAnalyticsDashboard
+                onLoadingChange={setLoading}
+                onError={handleError}
+              />
             )}
           </>
         )}
@@ -500,6 +508,14 @@ export default function HRModulePage() {
         onClose={() => setShowAddLeaveModal(false)}
         onSuccess={handleSuccess}
         onError={handleError}
+      />
+
+      <EditEmployeeModal
+        isOpen={showEditEmployeeModal}
+        onClose={() => setShowEditEmployeeModal(false)}
+        onSuccess={handleSuccess}
+        onError={handleError}
+        employee={selectedEmployee}
       />
 
       {/* Toast Notification */}

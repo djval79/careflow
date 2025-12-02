@@ -81,22 +81,52 @@ function ApplicationDetailsModal({ application, isOpen, onClose, onUpdate }: App
             <p className="text-sm text-gray-500">{application.job_postings?.department} • {application.job_postings?.employment_type?.replace('_', ' ')}</p>
           </div>
 
-          {/* Links */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* AI Screening Results */}
+          {(application.ai_score || application.ai_summary) && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-blue-800 mb-2">AI Screening Results</h4>
+              {application.ai_score && (
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="font-bold text-blue-900">{application.ai_score}/100</span>
+                  <div className="w-full bg-blue-200 rounded-full h-2.5">
+                    <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${application.ai_score}%` }}></div>
+                  </div>
+                </div>
+              )}
+              {application.ai_summary && (
+                <p className="text-sm text-blue-700">{application.ai_summary}</p>
+              )}
+            </div>
+          )}
+
+          {/* Links & Actions */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {application.cv_url && (
               <a href={application.cv_url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center p-3 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-700">
                 View CV
               </a>
             )}
-            {application.portfolio_url && (
-              <a href={application.portfolio_url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center p-3 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-700">
-                Portfolio
-              </a>
-            )}
-            {application.linkedin_url && (
-              <a href={application.linkedin_url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center p-3 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-700">
-                LinkedIn
-              </a>
+            <button
+              onClick={() => handleAiScreen(application)}
+              className="flex items-center justify-center p-3 border border-transparent rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium"
+            >
+              AI Screen
+            </button>
+            {application.status === 'Hired' && (
+              <>
+                <button
+                  onClick={() => handleConvertToEmployee(application)}
+                  className="flex items-center justify-center p-3 border border-transparent rounded-lg bg-green-600 text-white hover:bg-green-700 text-sm font-medium"
+                >
+                  Convert to Employee
+                </button>
+                <button
+                  onClick={() => handleGenerateDocument(application, '1')} // Using hardcoded template ID '1' for offer letter
+                  className="flex items-center justify-center p-3 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-700"
+                >
+                  Generate Offer Letter
+                </button>
+              </>
             )}
           </div>
 
@@ -308,6 +338,62 @@ export default function RecruitmentPage() {
   function rescheduleInterview(interview: any) {
     if (window.confirm('Reschedule this interview?')) {
       setToast({ message: 'Interview rescheduling will be available in the next update', type: 'warning' });
+    }
+  }
+
+  async function handleAiScreen(application: any) {
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-screen-resume', {
+        body: {
+          application_id: application.id,
+        },
+      });
+
+      if (error) throw error;
+
+      setToast({ message: 'AI screening completed successfully!', type: 'success' });
+      onUpdate(); // Refresh the application data to show the new score and summary
+    } catch (error: any) {
+      setToast({ message: error.message || 'Failed to start AI screening', type: 'error' });
+    }
+  }
+
+  async function handleGenerateDocument(application: any, templateId: string) {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-document', {
+        body: {
+          template_id: templateId,
+          application_id: application.id,
+        },
+      });
+
+      if (error) throw error;
+
+      setToast({ message: 'Document generated successfully!', type: 'success' });
+      // You might want to open the document here, or provide a link
+    } catch (error: any) {
+      setToast({ message: error.message || 'Failed to generate document', type: 'error' });
+    }
+  }
+
+  async function handleConvertToEmployee(application: any) {
+    if (window.confirm(`Are you sure you want to convert ${application.applicant_first_name} ${application.applicant_last_name} to an employee?`)) {
+      try {
+        await callEmployeeCrud('create', {
+          first_name: application.applicant_first_name,
+          last_name: application.applicant_last_name,
+          email: application.applicant_email,
+          phone: application.applicant_phone,
+          position: application.job_postings?.job_title,
+          department: application.job_postings?.department,
+          status: 'active',
+          // Other relevant data can be mapped here
+        });
+        setToast({ message: 'Candidate successfully converted to employee!', type: 'success' });
+        setSelectedApplication(null); // Close the modal
+      } catch (error: any) {
+        setToast({ message: error.message || 'Failed to convert candidate', type: 'error' });
+      }
     }
   }
 
@@ -569,7 +655,7 @@ export default function RecruitmentPage() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Applied Date</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stage</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AI Score</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
@@ -610,7 +696,7 @@ export default function RecruitmentPage() {
                               )}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {app.score || 'N/A'}
+                              {app.ai_score ? `${app.ai_score}/100` : 'N/A'}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm">
                               <button

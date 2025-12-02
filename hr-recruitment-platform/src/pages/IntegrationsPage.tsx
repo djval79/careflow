@@ -70,6 +70,31 @@ export default function IntegrationsPage() {
         }
     }
 
+    async function checkConnection(serviceName: string) {
+        setLoading(true);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const { data, error } = await supabase.functions.invoke('integration-manager', {
+                body: { action: 'check_connection', service_name: serviceName },
+                headers: { Authorization: `Bearer ${session?.access_token}` }
+            });
+
+            if (error) throw error;
+
+            if (data?.data?.connected) {
+                alert(`✅ Connected to ${serviceName} successfully!`);
+                loadIntegrations(); // Refresh list to show Test button
+            } else {
+                alert(`❌ Connection failed: ${data?.data?.message || 'Unknown error'}. Please check your API keys.`);
+            }
+        } catch (error: any) {
+            console.error('Connection check error:', error);
+            alert(`❌ Error checking connection: ${error.message}`);
+        } finally {
+            setLoading(false);
+        }
+    }
+
     async function testIntegration(serviceName: string) {
         setTesting(true);
         try {
@@ -196,13 +221,24 @@ export default function IntegrationsPage() {
                                 <Eye className="w-4 h-4" />
                                 View Logs
                             </button>
-                            {integration.is_connected && (
+                            {integration.is_connected ? (
                                 <button
                                     onClick={() => testIntegration(integration.service_name)}
                                     disabled={testing}
                                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium disabled:opacity-50"
+                                    title="Test Integration"
                                 >
                                     <Send className="w-4 h-4" />
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => checkConnection(integration.service_name)}
+                                    disabled={loading}
+                                    className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium flex items-center justify-center gap-2"
+                                    title="Check Connection"
+                                >
+                                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                                    Connect
                                 </button>
                             )}
                         </div>

@@ -51,7 +51,6 @@ export default function AdminPrivilegeSetup() {
           email: user.email,
           full_name: 'System Administrator',
           role: 'Admin',
-          created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           permissions: JSON.stringify([
             'create_jobs',
@@ -65,6 +64,8 @@ export default function AdminPrivilegeSetup() {
             'manage_settings',
             'admin_access'
           ])
+        }, {
+          onConflict: 'user_id'
         });
 
       if (error) throw error;
