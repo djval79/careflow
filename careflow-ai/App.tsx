@@ -1,6 +1,8 @@
 
 import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { getQueryClient } from './lib/queryClient';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Dashboard from './pages/Dashboard';
@@ -44,6 +46,9 @@ import { AuthProvider } from './context/AuthContext';
 import { TenantProvider } from './context/TenantContext';
 import { UserRole } from './types';
 
+// Initialize Query Client
+const queryClient = getQueryClient();
+
 const AppLayout: React.FC = () => {
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-900">
@@ -62,10 +67,11 @@ const AppLayout: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <TenantProvider>
-        <Router>
-          <Routes>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TenantProvider>
+          <Router>
+            <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/accept-invite" element={<AcceptInvite />} />
@@ -120,12 +126,13 @@ const App: React.FC = () => {
               </Route>
             </Route>
 
-            {/* Catch all */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Router>
-      </TenantProvider>
-    </AuthProvider>
+              {/* Catch all */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Router>
+        </TenantProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 };
 

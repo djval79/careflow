@@ -1,6 +1,15 @@
+/**
+ * Authentication Context for CareFlow
+ * 
+ * Provides authentication state and methods throughout the application.
+ * Uses Supabase for authentication and profile management.
+ */
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase, UserProfile } from '../lib/supabase';
+import { log } from '../lib/logger';
+import { clearQueryCache } from '../lib/queryClient';
 
 interface AuthContextType {
     user: User | null;
@@ -13,6 +22,59 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Scoped logger for auth context
+const authLog = log.scope('AuthProvider');
+
+/**
+ * Fetch or create user profile
+ */
+async function fetchOrCreateProfile(userId: string, email: string, fullName?: string): Promise<UserProfile | null> {
+    try {
+        // First try to fetch existing profile
+        const { data: profileData, error: profileError } = await supabase
+            .from('users_profiles')
+            .select('*')
+            .eq('user_id', userId)
+            .maybeSingle();
+
+        if (profileError) {
+            authLog.error('Failed to fetch profile', { error: profileError.message, userId });
+            return null;
+        }
+
+        if (profileData) {
+            authLog.debug('Profile loaded', { userId, role: profileData.role });
+            return profileData;
+        }
+
+        // Profile doesn't exist, try to create one
+        authLog.info('Profile missing, attempting to auto-create', { userId });
+        
+        const { data: newProfile, error: createError } = await supabase
+            .from('users_profiles')
+            .insert({
+                user_id: userId,
+                email: email,
+                full_name: fullName || email?.split('@')[0] || 'New User',
+                role: 'carer',
+                status: 'Active'
+            })
+            .select()
+            .single();
+
+        if (createError) {
+            authLog.error('Failed to auto-create profile', { error: createError.message, userId });
+            return null;
+        }
+
+        authLog.info('Profile auto-created successfully', { userId });
+        return newProfile;
+    } catch (error) {
+        authLog.error('Profile fetch/create exception', { error: String(error), userId });
+        return null;
+    }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -21,172 +83,86 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const initRef = React.useRef(false);
 
     useEffect(() => {
-        console.log('AuthProvider: MOUNTED (Unique Test Log - Version 2)'); // <--- NEW UNIQUE LOG ADDED HERE
+        authLog.debug('AuthProvider mounted');
 
-        // Prevent double initialization
+        // Prevent double initialization in React strict mode
         if (initRef.current) return;
         initRef.current = true;
 
         let mounted = true;
 
-        // Global safety timeout to force loading false
+        // Safety timeout to prevent infinite loading state
         const safetyTimeout = setTimeout(() => {
-            if (mounted) {
-                console.warn('AuthProvider: Safety timeout triggered - forcing loading false');
+            if (mounted && loading) {
+                authLog.warn('Safety timeout triggered - forcing loading false');
                 setLoading(false);
             }
-        }, 15000); // Increased timeout to 15 seconds
+        }, 15000);
 
         async function loadUser() {
             try {
-                console.log('AuthProvider: Calling getUser()...');
+                authLog.debug('Loading user session...');
                 const { data: { user }, error: userError } = await supabase.auth.getUser();
-                console.log('AuthProvider: getUser() result:', user?.email, userError);
+                
+                if (userError) {
+                    authLog.debug('No active session', { error: userError.message });
+                }
 
                 if (mounted) {
                     setUser(user);
+                    
                     if (user) {
-                        const { data: profileData, error: profileError } = await supabase
-                            .from('users_profiles')
-                            .select('*')
-                            .eq('user_id', user.id)
-                            .maybeSingle();
-
+                        authLog.debug('User found, loading profile', { email: user.email });
+                        const profileData = await fetchOrCreateProfile(
+                            user.id, 
+                            user.email!, 
+                            user.user_metadata?.full_name
+                        );
                         if (mounted) {
-                            if (!profileData && !profileError) {
-                                console.log('AuthProvider: Profile missing (initial load), attempting to auto-create...');
-                                const { data: newProfile, error: createError } = await supabase
-                                    .from('users_profiles')
-                                    .insert({
-                                        user_id: user.id,
-                                        email: user.email!,
-                                        full_name: user.user_metadata.full_name || user.email?.split('@')[0] || 'New User',
-                                        role: 'carer',
-                                        status: 'Active'
-                                    })
-                                    .select()
-                                    .single();
-
-                                if (createError) {
-                                    console.error('AuthProvider: Failed to auto-create profile (initial load):', createError);
-                                    setProfile(null);
-                                } else {
-                                    console.log('AuthProvider: Profile auto-created (initial load):', newProfile);
-                                    setProfile(newProfile);
-                                }
-                            } else {
-                                setProfile(profileData);
-                            }
+                            setProfile(profileData);
                         }
                     }
                 }
             } catch (error) {
-                console.error('AuthProvider: LoadUser exception:', error);
+                authLog.error('LoadUser exception', { error: String(error) });
             } finally {
                 if (mounted) {
-                    console.log('AuthProvider: loadUser finished, setting loading false');
+                    authLog.debug('Initial load complete');
                     setLoading(false);
-                    clearTimeout(safetyTimeout); // Clear safety timeout if we finished normally
+                    clearTimeout(safetyTimeout);
                 }
             }
         }
 
         loadUser();
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-            console.log('AuthProvider: Auth State Change:', _event, session?.user?.email);
+        // Subscribe to auth state changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            authLog.debug('Auth state change', { event, email: session?.user?.email });
 
             if (!mounted) return;
 
             setUser(session?.user || null);
 
             if (session?.user) {
-                const userId = session.user.id;
-
-                // EMERGENCY BYPASS FOR SUPER ADMIN
-                if (session.user.email === 'mrsonirie@gmail.com') {
-                    console.log('AuthProvider: Applying SUPER ADMIN BYPASS for mrsonirie@gmail.com');
-                    const bypassProfile: UserProfile = {
-                        id: 'bypass-id',
-                        user_id: userId,
-                        email: session.user.email,
-                        full_name: 'System Administrator',
-                        role: 'admin',
-                        is_super_admin: true,
-                        is_active: true,
-                        phone: null,
-                        avatar_url: null,
-                        department: null,
-                        position: null,
-                        tenant_id: null,
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString()
-                    };
-                    setProfile(bypassProfile);
-                    setLoading(false);
-                    return;
-                }
-
-                // Fetch profile
-                const { data: profileData, error: profileError } = await supabase
-                    .from('users_profiles')
-                    .select('*')
-                    .eq('user_id', userId)
-                    .maybeSingle();
-
+                const profileData = await fetchOrCreateProfile(
+                    session.user.id,
+                    session.user.email!,
+                    session.user.user_metadata?.full_name
+                );
+                
                 if (mounted) {
-                    if (profileError) {
-                        console.error('AuthProvider: Profile Load Error:', profileError);
-                        // Retry once after 1 second
-                        setTimeout(async () => {
-                            console.log('AuthProvider: Retrying profile fetch...');
-                            const { data: retryData, error: retryError } = await supabase
-                                .from('users_profiles')
-                                .select('*')
-                                .eq('user_id', userId)
-                                .maybeSingle();
-
-                            if (retryData) {
-                                console.log('AuthProvider: Profile loaded on retry:', retryData);
-                                if (mounted) setProfile(retryData);
-                            } else {
-                                console.error('AuthProvider: Retry failed:', retryError);
-                                setProfile(null);
-                            }
-                        }, 1000);
-                        setProfile(null);
-                    } else if (!profileData) {
-                        console.error('AuthProvider: CRITICAL - Profile missing even after auto-create attempt!');
-                        // Try one last desperate auto-create
-                        const { data: lastChance, error: lastError } = await supabase
-                            .from('users_profiles')
-                            .insert({
-                                user_id: userId,
-                                email: session.user.email,
-                                full_name: session.user.user_metadata.full_name || 'User',
-                                role: 'carer',
-                                status: 'Active'
-                            })
-                            .select()
-                            .single();
-
-                        if (lastChance) {
-                            console.log('AuthProvider: Profile created on last chance:', lastChance);
-                            setProfile(lastChance);
-                        } else {
-                            console.error('AuthProvider: Last chance failed:', lastError);
-                            setProfile(null);
-                        }
-                    } else {
-                        console.log('AuthProvider: Profile Loaded (Auth Change):', profileData);
-                        setProfile(profileData);
-                    }
+                    setProfile(profileData);
                     setLoading(false);
                 }
             } else {
                 if (mounted) {
                     setProfile(null);
                     setLoading(false);
+                    // Clear query cache on sign out
+                    if (event === 'SIGNED_OUT') {
+                        clearQueryCache();
+                    }
                 }
             }
         });
@@ -199,12 +175,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     async function signIn(email: string, password: string) {
+        authLog.debug('Sign in attempt', { email });
         const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) console.error('Supabase Auth Error:', error.message);
+        
+        if (error) {
+            authLog.error('Sign in failed', { error: error.message, email });
+        } else {
+            authLog.info('Sign in successful', { email });
+            log.track('user_signed_in', { email });
+        }
+        
         return { error };
     }
 
     async function signUp(email: string, password: string, fullName: string, role: 'admin' | 'carer' = 'carer') {
+        authLog.debug('Sign up attempt', { email, role });
+        
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
@@ -216,22 +202,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
         });
 
-        if (error) console.error('Supabase SignUp Error:', error.message);
+        if (error) {
+            authLog.error('Sign up failed', { error: error.message, email });
+        } else {
+            authLog.info('Sign up successful', { email });
+            log.track('user_signed_up', { email, role });
+        }
 
-        // Profile creation is now handled by a Database Trigger (fix_signup_rls.sql)
-        // We do not need to manually insert here.
-
+        // Profile creation is handled by a Database Trigger
         return { error };
     }
 
     async function signOut() {
-        console.log('AuthContext: signOut called');
+        authLog.debug('Sign out initiated');
+        
         try {
             const { error } = await supabase.auth.signOut();
-            if (error) console.error('AuthContext: Supabase signOut error', error);
-            else console.log('AuthContext: Supabase signOut successful');
+            
+            if (error) {
+                authLog.error('Sign out error', { error: error.message });
+            } else {
+                authLog.info('Sign out successful');
+                log.track('user_signed_out');
+                // Clear query cache
+                clearQueryCache();
+            }
         } catch (err) {
-            console.error('AuthContext: signOut exception', err);
+            authLog.error('Sign out exception', { error: String(err) });
         }
     }
 
