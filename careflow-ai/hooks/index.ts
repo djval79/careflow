@@ -77,6 +77,22 @@ export {
   useVisitTrends,
 } from './useDashboard';
 
+// Finance hooks (Payroll & Invoices)
+export {
+  usePayroll,
+  usePayrollStats,
+  useApprovePayroll,
+  useMarkPayrollPaid,
+  useCreatePayroll,
+  useInvoices,
+  useInvoiceStats,
+  useInvoice,
+  useCreateInvoice,
+  useSendInvoice,
+  useMarkInvoicePaid,
+  useDeleteInvoice,
+} from './useFinance';
+
 // Re-export types
 export type { DashboardStats } from './useDashboard';
 

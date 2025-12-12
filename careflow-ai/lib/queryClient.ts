@@ -130,6 +130,7 @@ export const queryKeys = {
     list: (filters?: Record<string, unknown>) =>
       [...queryKeys.payroll.lists(), filters] as const,
     detail: (id: string) => [...queryKeys.payroll.all, 'detail', id] as const,
+    stats: () => [...queryKeys.payroll.all, 'stats'] as const,
   },
 
   // Invoices
@@ -139,6 +140,7 @@ export const queryKeys = {
     list: (filters?: Record<string, unknown>) =>
       [...queryKeys.invoices.lists(), filters] as const,
     detail: (id: string) => [...queryKeys.invoices.all, 'detail', id] as const,
+    stats: () => [...queryKeys.invoices.all, 'stats'] as const,
   },
 } as const;
 
