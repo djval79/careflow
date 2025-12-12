@@ -234,13 +234,15 @@ export function GenericCRUDTable<T extends Record<string, unknown>>({
               )}
               {searchable && (
                 <div className="relative">
-                  <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
+                  <Search className="absolute left-3 top-2.5 text-slate-400" size={16} aria-hidden="true" />
                   <input
-                    type="text"
+                    type="search"
                     placeholder={searchPlaceholder}
                     value={searchQuery}
                     onChange={(e) => handleSearchChange(e.target.value)}
                     className="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:outline-none text-sm w-64"
+                    aria-label={searchPlaceholder}
+                    role="searchbox"
                   />
                 </div>
               )}
@@ -253,8 +255,9 @@ export function GenericCRUDTable<T extends Record<string, unknown>>({
                 <button
                   onClick={onAdd}
                   className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 shadow-sm transition-colors"
+                  aria-label={addButtonLabel}
                 >
-                  <Plus size={16} />
+                  <Plus size={16} aria-hidden="true" />
                   {addButtonLabel}
                 </button>
               )}
@@ -265,24 +268,29 @@ export function GenericCRUDTable<T extends Record<string, unknown>>({
 
       {/* Error State */}
       {error && (
-        <div className="p-4 bg-red-50 border-b border-red-100 flex items-center gap-2 text-red-700">
-          <AlertCircle size={16} />
+        <div 
+          className="p-4 bg-red-50 border-b border-red-100 flex items-center gap-2 text-red-700"
+          role="alert"
+          aria-live="polite"
+        >
+          <AlertCircle size={16} aria-hidden="true" />
           <span className="text-sm">{error}</span>
         </div>
       )}
 
       {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
+      <div className="overflow-x-auto" role="region" aria-label={title || 'Data table'}>
+        <table className="w-full text-left text-sm" role="table">
           <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-100">
             <tr>
               {selectable && (
-                <th className="px-4 py-3 w-10">
+                <th className="px-4 py-3 w-10" scope="col">
                   <input
                     type="checkbox"
                     checked={selectedItems.length === processedData.length && processedData.length > 0}
                     onChange={handleSelectAll}
                     className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                    aria-label="Select all rows"
                   />
                 </th>
               )}
@@ -292,19 +300,28 @@ export function GenericCRUDTable<T extends Record<string, unknown>>({
                   className={`px-4 py-3 ${col.sortable ? 'cursor-pointer select-none hover:bg-slate-100' : ''} ${col.className || ''}`}
                   style={col.width ? { width: col.width } : undefined}
                   onClick={col.sortable ? () => handleSort(String(col.key)) : undefined}
+                  scope="col"
+                  aria-sort={sortColumn === col.key ? (sortDirection === 'asc' ? 'ascending' : 'descending') : undefined}
+                  tabIndex={col.sortable ? 0 : undefined}
+                  onKeyDown={col.sortable ? (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleSort(String(col.key));
+                    }
+                  } : undefined}
                 >
                   <div className="flex items-center gap-1">
                     {col.label}
                     {col.sortable && sortColumn === col.key && (
                       sortDirection === 'asc' 
-                        ? <ChevronUp size={14} /> 
-                        : <ChevronDown size={14} />
+                        ? <ChevronUp size={14} aria-hidden="true" /> 
+                        : <ChevronDown size={14} aria-hidden="true" />
                     )}
                   </div>
                 </th>
               ))}
               {(actions.length > 0 || onView || onEdit || onDelete) && (
-                <th className="px-4 py-3 text-right w-24">Actions</th>
+                <th className="px-4 py-3 text-right w-24" scope="col">Actions</th>
               )}
             </tr>
           </thead>
@@ -354,6 +371,7 @@ export function GenericCRUDTable<T extends Record<string, unknown>>({
                             handleSelectItem(item);
                           }}
                           className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                          aria-label={`Select row ${index + 1}`}
                         />
                       </td>
                     )}
@@ -376,8 +394,9 @@ export function GenericCRUDTable<T extends Record<string, unknown>>({
                               }}
                               className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                               title="View"
+                              aria-label="View details"
                             >
-                              <Eye size={16} />
+                              <Eye size={16} aria-hidden="true" />
                             </button>
                           )}
                           {onEdit && (
@@ -388,8 +407,9 @@ export function GenericCRUDTable<T extends Record<string, unknown>>({
                               }}
                               className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                               title="Edit"
+                              aria-label="Edit item"
                             >
-                              <Edit size={16} />
+                              <Edit size={16} aria-hidden="true" />
                             </button>
                           )}
                           {onDelete && (
@@ -400,8 +420,9 @@ export function GenericCRUDTable<T extends Record<string, unknown>>({
                               }}
                               className="p-1.5 rounded-lg text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"
                               title="Delete"
+                              aria-label="Delete item"
                             >
-                              <Trash2 size={16} />
+                              <Trash2 size={16} aria-hidden="true" />
                             </button>
                           )}
                           {actions.map((action) => renderActionButton(action, item))}
@@ -418,8 +439,11 @@ export function GenericCRUDTable<T extends Record<string, unknown>>({
 
       {/* Pagination */}
       {paginated && totalPages > 1 && (
-        <div className="px-4 py-3 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
-          <div className="text-sm text-slate-500">
+        <nav 
+          className="px-4 py-3 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between"
+          aria-label="Table pagination"
+        >
+          <div className="text-sm text-slate-500" aria-live="polite">
             {totalItems !== undefined && (
               <>
                 Showing {((currentPage - 1) * pageSize) + 1} to{' '}
@@ -427,26 +451,28 @@ export function GenericCRUDTable<T extends Record<string, unknown>>({
               </>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" role="group" aria-label="Pagination controls">
             <button
               onClick={() => onPageChange?.(currentPage - 1)}
               disabled={currentPage <= 1}
               className="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              aria-label="Go to previous page"
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft size={16} aria-hidden="true" />
             </button>
-            <span className="text-sm text-slate-600 px-2">
+            <span className="text-sm text-slate-600 px-2" aria-current="page">
               Page {currentPage} of {totalPages}
             </span>
             <button
               onClick={() => onPageChange?.(currentPage + 1)}
               disabled={currentPage >= totalPages}
               className="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              aria-label="Go to next page"
             >
-              <ChevronRight size={16} />
+              <ChevronRight size={16} aria-hidden="true" />
             </button>
           </div>
-        </div>
+        </nav>
       )}
     </div>
   );

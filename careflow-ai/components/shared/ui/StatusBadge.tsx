@@ -78,6 +78,9 @@ export function StatusBadge({
 }: StatusBadgeProps) {
   const resolvedVariant = variant || getVariantFromStatus(status);
   
+  // Map variant to semantic meaning for screen readers
+  const semanticRole = ['danger', 'warning'].includes(resolvedVariant) ? 'alert' : 'status';
+  
   return (
     <span 
       className={`
@@ -86,6 +89,8 @@ export function StatusBadge({
         ${sizeStyles[size]}
         ${className}
       `}
+      role={semanticRole}
+      aria-label={`Status: ${status}`}
     >
       {status}
     </span>
